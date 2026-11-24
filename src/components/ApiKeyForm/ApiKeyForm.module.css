@@ -1,0 +1,28 @@
+.form { display: grid; gap: 10px; }
+.body { margin: 0; color: var(--muted); }
+.link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 99px;
+  background: var(--sun);
+  color: #1b1b1f;
+  font-weight: 700;
+  text-decoration: none;
+}
+.input {
+  min-height: 52px;
+  padding: 0 16px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  font: 16px/1 ui-monospace, Menlo, monospace;
+}
+.input:focus { outline: none; border-color: var(--ink); }
+.bad { border-color: var(--pink); }
+.ok { border-color: var(--teal); }
+.err { margin: 0; color: var(--pink); font-size: 14px; }
+.okText { margin: 0; display: inline-flex; align-items: center; gap: 4px; color: var(--teal); font-weight: 700; font-size: 14px; }

@@ -1,0 +1,38 @@
+.avatar {
+  display: block;
+  overflow: visible;
+}
+
+.halo {
+  fill: var(--sun);
+}
+
+.head {
+  transform-origin: 100px 160px;
+  transform-box: view-box;
+}
+
+.speaking .head {
+  animation: bob 0.9s ease-in-out infinite;
+}
+
+.lids rect {
+  transform-origin: center top;
+  transform-box: fill-box;
+  transform: scaleY(0);
+  animation: blink 4.2s infinite;
+}
+
+@keyframes blink {
+  0%, 94%, 100% { transform: scaleY(0); }
+  96% { transform: scaleY(1); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+  50% { transform: rotate(1.5deg) translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speaking .head, .lids rect { animation: none; }
+}
