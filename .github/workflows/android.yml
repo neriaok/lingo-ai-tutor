@@ -33,8 +33,7 @@ jobs:
           java-version: 21
           cache: gradle
 
-      - uses: android-actions/setup-android@v3
-
+      # The ubuntu runner ships with the Android SDK (ANDROID_HOME); Gradle fetches any missing platform.
       - name: Build web assets
         run: |
           npm ci
