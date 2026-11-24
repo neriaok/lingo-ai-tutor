@@ -33,6 +33,7 @@ const memoryLines = (memory?: LearnerMemory): string => {
   if (!memory) return '';
   const parts: string[] = [];
   if (memory.words.length) parts.push(`Words the learner is currently learning (reuse them naturally and invite the learner to use them): ${memory.words.join(', ')}.`);
+  if (memory.recaps.length) parts.push(`What you remember about the learner from recent calls (mention it naturally when relevant, like a real tutor who remembers): ${memory.recaps.join(' ')}`);
   if (memory.mistakes.length) parts.push(`Mistakes the learner made in past lessons (create natural chances to practise the correct form): ${memory.mistakes.join(' | ')}.`);
   return parts.length ? `\nMEMORY FROM PAST LESSONS\n- ${parts.join('\n- ')}` : '';
 };
@@ -47,8 +48,17 @@ const spokenLevelRule = (level: Profile['level']): string => {
   }
 };
 
+/** Language rule for explanations — also sent mid-call when the learner flips the switch. */
+export const explainRule = (profile: Profile): string => {
+  const native = langInfo(profile.native).name;
+  const target = langInfo(profile.target).name;
+  return profile.explainMode === 'mixed'
+    ? `EXPLANATION MODE: MIXED. Keep the conversation itself in ${target}, but whenever you explain something — grammar, the meaning of a word, why something was wrong, or when the learner seems lost or asks — say that explanation briefly in ${native}, then switch straight back to ${target} and continue.`
+    : `EXPLANATION MODE: ${target.toUpperCase()} ONLY. Speak only ${target}, including all explanations. If the learner doesn't understand, rephrase more simply in ${target}, use examples or synonyms — never switch to ${native}, even if they speak ${native}.`;
+};
+
 /** System instruction for the real-time voice call (Gemini Live). */
-export const buildLiveInstruction = (profile: Profile, scenario: Scenario, memory?: LearnerMemory): string => {
+export const buildLiveInstruction = (profile: Profile, scenario: Scenario, memory?: LearnerMemory, transcript: ChatMessage[] = []): string => {
   const tutor = tutorInfo(profile.tutor);
   const native = langInfo(profile.native).name;
   const target = langInfo(profile.target).name;
@@ -68,10 +78,17 @@ HOW TO SOUND HUMAN
 - Share small opinions and stories of your own so it feels two-sided; then hand the turn back with a question.
 - Never use lists, markdown, emojis or say things like "as an AI". Never describe what you are doing.
 - Speak ${target}. ${spokenLevelRule(profile.level)}
-- If the learner is clearly stuck or speaks ${native}, you may give a very short hint in ${native} (one phrase), then return to ${target} immediately.
+- ${explainRule(profile)}
 - ${corr} The app shows written corrections on screen, so keep the flow going.
 - If the learner interrupts you, stop and respond to what they said.
-- Weave in their interests naturally. Keep it warm, safe and encouraging.${memoryLines(memory)}`;
+- Weave in their interests naturally. Keep it warm, safe and encouraging.${memoryLines(memory)}${
+    transcript.length
+      ? `\n\nTHIS CALL SO FAR (it was interrupted; continue from here)\n${transcript
+          .slice(-20)
+          .map((m) => `${m.role === 'user' ? 'LEARNER' : 'YOU'}: ${m.text}`)
+          .join('\n')}`
+      : ''
+  }`;
 };
 
 /** Written feedback for one voice exchange — shown as cards under the captions. */
@@ -112,6 +129,7 @@ RULES
 - Weave the learner's interests in naturally when relevant.
 - ${correctionRule[profile.correction]} Explanations are written in ${native}, short and friendly.
 - If the learner writes in ${native}, gently help them say it in ${target} (put the ${target} version in suggestions) and continue.
+- ${explainRule(profile)}
 - newWords: 0–3 words/phrases from YOUR reply that may be new at this level, each with meaning in ${native} and a short ${target} example.
 - suggestions: possible answers the learner could give, in ${target}, matching their level.
 - translation: your reply translated into ${native}.
@@ -135,5 +153,5 @@ Transcript:
 ${transcript}
 
 Return ONLY one JSON object (all explanation text in ${native}):
-{"score":0-100 (fluency+accuracy for their level),"headline":"one encouraging sentence","strengths":["2-3 short points"],"mistakes":[{"original":"learner's words","corrected":"correct ${target}","explanation":"why"}] (max 4, most useful first),"tip":"one concrete tip for next time"}`;
+{"score":0-100 (fluency+accuracy for their level),"headline":"one encouraging sentence","strengths":["2-3 short points"],"mistakes":[{"original":"learner's words","corrected":"correct ${target}","explanation":"why"}] (max 4, most useful first),"tip":"one concrete tip for next time","recap":"1-2 sentences IN ENGLISH, third person, of personal things the learner shared (facts, plans, opinions, topics) that a tutor should remember next time"}`;
 };

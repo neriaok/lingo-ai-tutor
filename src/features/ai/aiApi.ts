@@ -86,6 +86,7 @@ export const aiApi = createApi({
               strengths: arr(o.strengths).map(str).filter(Boolean).slice(0, 3),
               mistakes: arr(o.mistakes).map(toCorrection).filter((c): c is Correction => !!c).slice(0, 4),
               tip: str(o.tip),
+              recap: str(o.recap) || undefined,
               xp: userTurns * 10 + Math.round(score / 5),
             },
           };

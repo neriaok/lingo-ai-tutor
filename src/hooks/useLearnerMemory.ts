@@ -6,6 +6,7 @@ import { useAppSelector } from './useAppDispatch';
 export const useLearnerMemory = (): LearnerMemory => {
   const target = useAppSelector((s) => s.profile.data.target);
   const { cards, mistakes } = useAppSelector((s) => s.progress);
+  const sessions = useAppSelector((s) => s.history.sessions);
   return useMemo(() => {
     const now = Date.now();
     const words = cards
@@ -17,6 +18,10 @@ export const useLearnerMemory = (): LearnerMemory => {
       .filter((m) => m.lang === target && !m.fixed)
       .slice(0, 5)
       .map((m) => `"${m.original}" → "${m.corrected}"`);
-    return { words, mistakes: errs };
-  }, [cards, mistakes, target]);
+    const recaps = sessions
+      .filter((x) => x.target === target && x.summary?.recap)
+      .slice(0, 3)
+      .map((x) => x.summary?.recap ?? '');
+    return { words, mistakes: errs, recaps };
+  }, [cards, mistakes, sessions, target]);
 };

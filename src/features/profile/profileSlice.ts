@@ -17,6 +17,7 @@ export const defaultProfile: Profile = {
   goal: 'conversation',
   tutor: 'maya',
   correction: 'gentle',
+  explainMode: 'target',
   dailyMinutes: 10,
   speechRate: 0.95,
   autoSpeak: true,
