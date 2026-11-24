@@ -7,6 +7,7 @@ import { completeOnboarding } from '../../features/profile/profileSlice';
 import { startSession } from '../../features/session/sessionSlice';
 import type { CorrectionStyle, LangCode, Profile } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
+import ExplainToggle from '../ExplainToggle';
 import Avatar from '../Avatar';
 import ui from '../ui.module.css';
 import styles from './Onboarding.module.css';
@@ -153,6 +154,10 @@ const Onboarding: FC = () => {
                 {label}
               </button>
             ))}
+          </div>
+          <p className={ui.label}>{s.explainLabel}</p>
+          <div className={styles.explain}>
+            <ExplainToggle value={draft.explainMode} native={draft.native} target={draft.target} label={s.explainLabel} onChange={(explainMode) => patch({ explainMode })} />
           </div>
           <p className={ui.label}>{s.daily}</p>
           <div className={styles.row}>

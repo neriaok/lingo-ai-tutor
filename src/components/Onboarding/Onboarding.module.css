@@ -94,3 +94,4 @@
   background: linear-gradient(transparent, var(--bg) 30%);
 }
 .grow { flex: 1; }
+.explain { color: var(--ink); }

@@ -32,6 +32,8 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 - 🧑‍🏫 **Four animated tutors**, each with a personality and voice. The mouth is driven by the **actual amplitude** of the tutor's audio, with blinking, head motion and mood expressions.
 - 💬 **Optional chat panel**: type during a call and the tutor answers by voice. If the mic is unavailable, the app falls back to a full text chat.
 - 📝 **Live captions** for both sides, with a one-tap translation into your native language.
+- 🔀 **Explanation language switch**, available inside the call: everything in the target language, or keep the conversation in it while the tutor explains grammar and meanings in your native language.
+- 💾 **Every conversation is saved automatically.** If a call is cut off by an incoming phone call, an app switch or a reload, you can continue exactly where you stopped. Past conversations can be re-read and resumed at any time.
 
 **Learning**
 - 🎯 **CEFR levels A1–C2** that change vocabulary, speed and sentence length, plus a **spoken placement test**.
@@ -40,7 +42,7 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 - ✍️ **Gentle corrections**: the tutor recasts mistakes out loud, and written correction cards explain them in your language. You can choose instant, gentle or none.
 - 📚 **Spaced-repetition vocabulary** (Leitner boxes). Save any new word from a call with one tap.
 - 🗂️ **Mistakes notebook** that tracks repeated errors.
-- 🧠 **Tutor memory**: your saved words and open mistakes go into the next call's instructions, so the tutor brings them up again naturally. There's also a dedicated *Practise my words* call.
+- 🧠 **Tutor memory**: a short recap of what you shared in recent calls, plus your saved words and open mistakes, go into the next call's instructions, so the tutor brings them up again naturally. There's also a dedicated *Practise my words* call.
 - 📊 **Lesson summary** with a score, strengths, top mistakes and one concrete tip. XP, streaks and a daily minutes goal track progress.
 
 **Platform**
@@ -69,7 +71,7 @@ src/
 │   ├── Onboarding/  Home/  Vocab/  Summary/  Settings/  ApiKeyForm/ …
 ├── features/            # Redux Toolkit
 │   ├── ai/aiApi.ts      # RTK Query endpoints (chat turn, per-turn feedback, summary)
-│   ├── profile/  session/  progress/
+│   ├── profile/  session/  progress/  history/   # history is synced by a listener middleware
 ├── services/
 │   ├── gemini/liveTutor.ts  # Live API session: mic in, audio out, captions, resumption
 │   ├── gemini/text.ts       # JSON generation for feedback & summaries

@@ -8,6 +8,7 @@ import { setView } from '../../features/session/sessionSlice';
 import { clearAll } from '../../services/storage';
 import type { CorrectionStyle, LangCode, Profile } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
+import ExplainToggle from '../ExplainToggle';
 import Avatar from '../Avatar';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
@@ -127,6 +128,11 @@ const Settings: FC = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className={styles.field}>
+        <span className={ui.label}>{s.explainLabel}</span>
+        <ExplainToggle value={draft.explainMode} native={draft.native} target={draft.target} label={s.explainLabel} onChange={(explainMode) => patch({ explainMode })} />
       </div>
 
       <label className={styles.field}>

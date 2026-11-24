@@ -1,0 +1,22 @@
+.toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.1);
+}
+.option {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.15s;
+}
+.on { background: #1b1b1f; color: #fff; font-weight: 700; }
