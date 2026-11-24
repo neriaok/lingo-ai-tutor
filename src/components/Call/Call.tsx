@@ -11,12 +11,13 @@ import { updateProfile } from '../../features/profile/profileSlice';
 import { addMinutes, addMistake, addXp, saveWord } from '../../features/progress/progressSlice';
 import { addMessage, setSummary, setView, updateMessage } from '../../features/session/sessionSlice';
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
-import { buildLiveInstruction } from '../../services/tutorPrompt';
+import { buildLiveInstruction, explainRule } from '../../services/tutorPrompt';
 import { stopSpeaking } from '../../services/speech';
-import type { ChatMessage, Level, NewWord } from '../../types';
+import type { ChatMessage, ExplainMode, Level, NewWord } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import Avatar from '../Avatar';
 import ChatPanel from '../ChatPanel';
+import ExplainToggle from '../ExplainToggle';
 import FeedbackCard from '../FeedbackCard';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
@@ -32,6 +33,8 @@ const Call: FC = () => {
   const say = useTutorVoice();
   const profile = useAppSelector((st) => st.profile.data);
   const { messages, scenarioId, startedAt } = useAppSelector((st) => st.session);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
   const cards = useAppSelector((st) => st.progress.cards);
   const [chatTurn, { isLoading: chatLoading }] = useTutorTurnMutation();
   const [feedback] = useFeedbackMutation();
@@ -94,9 +97,9 @@ const Call: FC = () => {
         apiKey: p.apiKey,
         model: p.liveModel,
         voice: tutorInfo(p.tutor).voice,
-        systemInstruction: buildLiveInstruction(p, scenario, memoryRef.current),
-        opener: messages.length
-          ? '(The call reconnected. Continue the conversation naturally.)'
+        systemInstruction: buildLiveInstruction(p, scenario, memoryRef.current, messagesRef.current),
+        opener: messagesRef.current.length
+          ? '(The learner is back after a short break. Welcome them back in one short sentence and continue the conversation right where it stopped.)'
           : `(${p.name || 'The learner'} just joined the call. Greet them warmly by name and open the activity.)`,
       },
       {
@@ -139,7 +142,7 @@ const Call: FC = () => {
         setNotice(/API key|401|403/i.test(msg) ? s.badKey : `${s.callError} · ${msg}`);
       }
     }
-  }, [dispatch, enrich, messages.length, s, scenario]);
+  }, [dispatch, enrich, s, scenario]);
 
   // Start once on open; hang up on leave.
   useEffect(() => {
@@ -150,6 +153,22 @@ const Call: FC = () => {
       stopSpeaking();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Phone call, app switch or screen lock: hang up cleanly and offer to resume (transcript is saved).
+  useEffect(() => {
+    const handleHidden = (): void => {
+      if (document.visibilityState !== 'hidden' || !tutorRef.current) return;
+      const t = tutorRef.current;
+      tutorRef.current = null;
+      void t.stop('paused');
+    };
+    document.addEventListener('visibilitychange', handleHidden);
+    window.addEventListener('pagehide', handleHidden);
+    return () => {
+      document.removeEventListener('visibilitychange', handleHidden);
+      window.removeEventListener('pagehide', handleHidden);
+    };
   }, []);
 
   useEffect(
@@ -195,6 +214,12 @@ const Call: FC = () => {
     }
   };
 
+  const handleExplainMode = (explainMode: ExplainMode): void => {
+    dispatch(updateProfile({ explainMode }));
+    const rule = explainRule({ ...profileRef.current, explainMode });
+    tutorRef.current?.sendInstruction(`(The learner just changed a setting. ${rule} Apply it from your next sentence on, without commenting on the change.)`);
+  };
+
   const handleMute = (): void => {
     const next = !muted;
     setMuted(next);
@@ -236,6 +261,7 @@ const Call: FC = () => {
     listening: muted ? s.mute : s.callListening,
     speaking: s.callSpeaking,
     reconnecting: s.callReconnecting,
+    paused: s.callPaused,
     ended: s.endCall,
     error: s.callError,
   };
@@ -272,6 +298,16 @@ const Call: FC = () => {
         )}
       </header>
 
+      <div className={styles.modeRow}>
+        <ExplainToggle
+          value={profile.explainMode}
+          native={profile.native}
+          target={profile.target}
+          label={s.explainLabel}
+          onChange={handleExplainMode}
+        />
+      </div>
+
       <div className={styles.stage}>
         <div
           className={clsx(styles.ring, shownState === 'listening' && !muted && styles.ringOn)}
@@ -282,6 +318,15 @@ const Call: FC = () => {
       </div>
 
       <div className={styles.captions}>
+        {mode === 'voice' && (callState === 'paused' || (callState === 'error' && messages.length > 0)) && (
+          <div className={styles.pausedCard}>
+            <strong>{callState === 'paused' ? s.pausedTitle : s.callError}</strong>
+            <p>{s.pausedBody}</p>
+            <button type="button" className={clsx(ui.btn, ui.pink)} onClick={() => void startCall()}>
+              <Icon name="phone" size={20} /> {s.resumeCall}
+            </button>
+          </div>
+        )}
         {caption && (
           <p className={styles.tutorCaption} dir={target.rtl ? 'rtl' : 'ltr'}>{caption}</p>
         )}
@@ -310,7 +355,7 @@ const Call: FC = () => {
         {notice && (
           <div className={styles.notice}>
             <p>{notice}</p>
-            {mode === 'voice' && callState === 'error' && (
+            {mode === 'voice' && callState === 'error' && messages.length === 0 && (
               <button type="button" className={ui.btn} onClick={() => void startCall()}>{s.callRetry}</button>
             )}
           </div>

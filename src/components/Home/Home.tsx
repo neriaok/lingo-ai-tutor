@@ -4,7 +4,7 @@ import { SCENARIOS, langInfo, levelIndex, tutorInfo } from '../../data/catalog';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { useStrings } from '../../hooks/useStrings';
 import { dayKey } from '../../features/progress/progressSlice';
-import { setView, startSession } from '../../features/session/sessionSlice';
+import { resumeSession, setView, startSession } from '../../features/session/sessionSlice';
 import Avatar from '../Avatar';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
@@ -15,6 +15,11 @@ const Home: FC = () => {
   const s = useStrings();
   const profile = useAppSelector((st) => st.profile.data);
   const { xp, streak, cards, minutesByDay } = useAppSelector((st) => st.progress);
+  const sessions = useAppSelector((st) => st.history.sessions);
+  // Offer to pick up a call that was cut off in the last 24 hours.
+  const unfinished = sessions.find(
+    (x) => !x.summary && x.target === profile.target && Date.now() - x.updatedAt < 86_400_000 && x.messages.some((m) => m.role === 'user'),
+  );
   const isHe = profile.native === 'he';
   const tutor = tutorInfo(profile.tutor);
   const target = langInfo(profile.target);
@@ -62,6 +67,16 @@ const Home: FC = () => {
         </div>
       </section>
 
+      {unfinished && (
+        <button type="button" className={styles.resume} onClick={() => dispatch(resumeSession(unfinished))}>
+          <Icon name="phone" />
+          <span>
+            <strong>{s.continueWith}{tutorInfo(unfinished.tutor).name}</strong>
+            <small dir="auto">{unfinished.messages[unfinished.messages.length - 1]?.text.slice(0, 70)}…</small>
+          </span>
+        </button>
+      )}
+
       <button type="button" className={clsx(ui.card, styles.review)} onClick={() => dispatch(setView('vocab'))}>
         <span className={styles.reviewIcon}><Icon name="cards" /></span>
         <span className={styles.reviewText}>
@@ -69,6 +84,14 @@ const Home: FC = () => {
           <small>{due} {s.dueNow} · {myCards.length} {s.totalWords}</small>
         </span>
         {due > 0 && <span className={styles.badge}>{due}</span>}
+      </button>
+
+      <button type="button" className={clsx(ui.card, styles.review)} onClick={() => dispatch(setView('history'))}>
+        <span className={clsx(styles.reviewIcon, styles.historyIcon)}><Icon name="chat" /></span>
+        <span className={styles.reviewText}>
+          <strong>{s.history}</strong>
+          <small>{sessions.length}</small>
+        </span>
       </button>
 
       <h2 className={styles.sectionTitle}>{s.pickScenario}</h2>

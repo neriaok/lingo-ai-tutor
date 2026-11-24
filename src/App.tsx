@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, type FC } from 'react';
 import { langInfo } from './data/catalog';
 import { useAppSelector } from './hooks/useAppDispatch';
+import History from './components/History';
 import Home from './components/Home';
 import Onboarding from './components/Onboarding';
 import Settings from './components/Settings';
@@ -25,6 +26,7 @@ const App: FC = () => {
   switch (view) {
     case 'call': return <Suspense fallback={null}><Call /></Suspense>;
     case 'vocab': return <Vocab />;
+    case 'history': return <History />;
     case 'summary': return <Summary />;
     case 'settings': return <Settings />;
     default: return <Home />;

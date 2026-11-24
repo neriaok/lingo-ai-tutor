@@ -36,8 +36,10 @@
 .speaking i { background: var(--pink); }
 .error i { background: var(--pink); }
 .reconnecting i, .connecting i { background: #ffd166; animation: breathe 0.8s infinite; }
+.status.paused i { background: #ffd166; }
 @keyframes breathe { 50% { opacity: 0.3; } }
 
+.modeRow { padding: 4px max(4vw, 12px) 0; }
 .stage { flex: none; display: grid; place-items: center; padding: 6px 0 0; }
 .ring {
   --lvl: 0;
@@ -111,3 +113,6 @@
 
 @media (max-height: 700px) { .stage svg { width: 150px; height: 165px; } }
 @media (prefers-reduced-motion: reduce) { .listening i, .reconnecting i, .connecting i { animation: none; } .ring { transition: none; } }
+.pausedCard { display: grid; gap: 8px; justify-items: start; padding: 14px 16px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
+.pausedCard p { margin: 0; color: var(--muted); font-size: 15px; }
+.pausedCard strong { font-size: 18px; }

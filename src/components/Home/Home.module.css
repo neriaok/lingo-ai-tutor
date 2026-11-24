@@ -63,3 +63,18 @@
   .portrait { margin: -10px 0 0; }
   .stats, .hero button { justify-self: center; justify-content: center; }
 }
+.historyIcon { background: var(--ink); color: var(--bg); }
+.resume {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 2px dashed var(--pink);
+  border-radius: var(--radius);
+  background: var(--pink-soft);
+  color: var(--ink);
+  text-align: start;
+}
+.resume > svg { flex: none; box-sizing: content-box; padding: 12px; border-radius: 50%; background: var(--pink); color: #fff; }
+.resume span { display: grid; min-width: 0; }
+.resume small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

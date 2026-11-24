@@ -4,7 +4,7 @@ import { LIVE_MODEL_CANDIDATES } from './models';
 import { startMic, type MicHandle } from '../audio/mic';
 import { PcmPlayer } from '../audio/player';
 
-export type CallState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'reconnecting' | 'ended' | 'error';
+export type CallState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'reconnecting' | 'paused' | 'ended' | 'error';
 
 export interface LiveTutorEvents {
   onState: (state: CallState, detail?: string) => void;
@@ -214,13 +214,18 @@ export class LiveTutor {
     this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true });
   }
 
+  /** Silent instruction to the tutor mid-call (e.g. switching explanation language). */
+  sendInstruction(text: string): void {
+    this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false });
+  }
+
   setMuted(muted: boolean): void {
     this.muted = muted;
     this.mic?.setMuted(muted);
     if (muted) this.session?.sendRealtimeInput({ audioStreamEnd: true });
   }
 
-  async stop(): Promise<void> {
+  async stop(finalState: CallState = 'ended'): Promise<void> {
     this.closedByUser = true;
     await this.mic?.stop();
     this.mic = null;
@@ -232,6 +237,6 @@ export class LiveTutor {
     this.session = null;
     await this.player?.close();
     this.player = null;
-    this.ev.onState('ended');
+    this.ev.onState(finalState);
   }
 }
