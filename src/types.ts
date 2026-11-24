@@ -18,6 +18,8 @@ export interface Profile {
   tutor: TutorId;
   correction: CorrectionStyle;
   explainMode: ExplainMode;
+  /** Use the animated video tutor when the tutor has clips. */
+  videoAvatar: boolean;
   dailyMinutes: number;
   speechRate: number;
   autoSpeak: boolean;

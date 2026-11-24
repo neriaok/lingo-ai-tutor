@@ -4,7 +4,7 @@ import { langInfo } from '../../data/catalog';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { useStrings } from '../../hooks/useStrings';
 import { setView, startSession } from '../../features/session/sessionSlice';
-import Avatar from '../Avatar';
+import TutorPortrait from '../TutorPortrait';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
 import styles from './Summary.module.css';
@@ -20,7 +20,7 @@ const Summary: FC = () => {
   return (
     <div className={styles.wrap}>
       <section className={styles.hero}>
-        <Avatar tutor={tutor} mood={summary.score >= 60 ? 'happy' : 'encouraging'} size={140} />
+        <TutorPortrait tutor={tutor} mood={summary.score >= 60 ? 'happy' : 'encouraging'} size={140} className={styles.portrait} />
         <div className={styles.score}>
           <b>{summary.score}</b>
           <span>/100</span>

@@ -18,3 +18,4 @@
 .tip p { margin: 0; }
 .actions { display: flex; gap: 10px; }
 .actions button:first-child { flex: 1; }
+.portrait { width: 140px; }

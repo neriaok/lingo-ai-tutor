@@ -29,7 +29,7 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 
 **Conversation**
 - 🎙️ **Real-time voice call** via the Gemini Live API (native audio, speech-to-speech, barge-in).
-- 🧑‍🏫 **Four animated tutors**, each with a personality and voice. The mouth is driven by the **actual amplitude** of the tutor's audio, with blinking, head motion and mood expressions.
+- 🧑‍🏫 **Four tutors**, each with a personality and voice. Tutors with video clips (rendered with Gemini / Veo) cross-fade between idle, listening, talking and thinking loops that follow the live call. The drawn SVG tutors drive their mouth from the **actual amplitude** of the audio.
 - 💬 **Optional chat panel**: type during a call and the tutor answers by voice. If the mic is unavailable, the app falls back to a full text chat.
 - 📝 **Live captions** for both sides, with a one-tap translation into your native language.
 - 🔀 **Explanation language switch**, available inside the call: everything in the target language, or keep the conversation in it while the tutor explains grammar and meanings in your native language.

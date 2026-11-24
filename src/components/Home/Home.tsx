@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { useStrings } from '../../hooks/useStrings';
 import { dayKey } from '../../features/progress/progressSlice';
 import { resumeSession, setView, startSession } from '../../features/session/sessionSlice';
-import Avatar from '../Avatar';
+import TutorPortrait from '../TutorPortrait';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
 import styles from './Home.module.css';
@@ -46,7 +46,7 @@ const Home: FC = () => {
 
       <section className={styles.hero}>
         <div className={styles.portrait}>
-          <Avatar tutor={profile.tutor} size={170} mood="encouraging" />
+          <TutorPortrait tutor={profile.tutor} size={170} mood="encouraging" className={styles.homeVideo} />
         </div>
         <div className={styles.heroText}>
           <div className={styles.stats}>

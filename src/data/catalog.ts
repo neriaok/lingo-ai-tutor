@@ -86,6 +86,10 @@ export interface TutorInfo {
   shirt: string;
   style: 'bob' | 'short' | 'curly' | 'bun';
   glasses: boolean;
+  /** Animated clips available in public/avatars (Gemini/Veo renders). */
+  clips?: ('idle' | 'listen' | 'talk' | 'think')[];
+  /** Background colour of those clips, used for the stage behind them. */
+  videoBg?: string;
 }
 
 export const TUTORS: TutorInfo[] = [
@@ -93,6 +97,7 @@ export const TUTORS: TutorInfo[] = [
     id: 'maya', name: 'Maya', he: 'חמה וסבלנית', en: 'Warm & patient',
     persona: 'warm, patient and encouraging; celebrates small wins; speaks slowly and clearly',
     voice: 'Aoede', pitch: 1.15, skin: '#f2c6a0', hair: '#3b2416', shirt: '#ff4f6d', style: 'bob', glasses: false,
+    clips: ['idle', 'listen', 'talk', 'think'], videoBg: '#f5bd23',
   },
   {
     id: 'leo', name: 'Leo', he: 'מצחיק וקליל', en: 'Funny & casual',

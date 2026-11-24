@@ -16,6 +16,7 @@ import { stopSpeaking } from '../../services/speech';
 import type { ChatMessage, ExplainMode, Level, NewWord } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import Avatar from '../Avatar';
+import TutorPortrait from '../TutorPortrait';
 import ChatPanel from '../ChatPanel';
 import ExplainToggle from '../ExplainToggle';
 import FeedbackCard from '../FeedbackCard';
@@ -268,6 +269,11 @@ const Call: FC = () => {
   const caption = tutorCaption || lastTutor?.text || '';
   const captionTurn = !tutorCaption || tutorCaption === lastTutor?.text ? lastTutor?.turn : undefined;
   const mood = callState === 'connecting' || chatLoading ? 'thinking' : lastTutor?.turn?.mood ?? 'happy';
+  const clip =
+    audioPlaying ? 'talk'
+    : callState === 'connecting' || callState === 'reconnecting' || chatLoading ? 'think'
+    : shownState === 'listening' ? 'listen'
+    : 'idle';
 
   if (!profile.apiKey) {
     return (
@@ -313,7 +319,7 @@ const Call: FC = () => {
           className={clsx(styles.ring, shownState === 'listening' && !muted && styles.ringOn)}
           style={{ ['--lvl' as string]: Math.min(1, micLevel * 6).toFixed(2) }}
         >
-          <Avatar tutor={profile.tutor} mood={mood} size={220} live />
+          <TutorPortrait tutor={profile.tutor} clip={clip} mood={mood} size={220} live />
         </div>
       </div>
 

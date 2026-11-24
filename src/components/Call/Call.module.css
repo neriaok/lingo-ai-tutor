@@ -49,6 +49,7 @@
   transition: box-shadow 0.08s linear;
 }
 .ringOn { box-shadow: 0 0 0 calc(6px + var(--lvl) * 22px) rgba(255, 255, 255, 0.35); }
+.ring:has(video) { border-radius: 36px; }
 
 .captions {
   flex: 1;
@@ -111,7 +112,7 @@
 .noKey p { margin: 0; color: var(--muted); }
 .noKey button { width: 100%; }
 
-@media (max-height: 700px) { .stage svg { width: 150px; height: 165px; } }
+@media (max-height: 700px) { .stage svg { width: 150px; height: 165px; } .stage .ring > div { width: 150px; } }
 @media (prefers-reduced-motion: reduce) { .listening i, .reconnecting i, .connecting i { animation: none; } .ring { transition: none; } }
 .pausedCard { display: grid; gap: 8px; justify-items: start; padding: 14px 16px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
 .pausedCard p { margin: 0; color: var(--muted); font-size: 15px; }

@@ -78,3 +78,5 @@
 .resume > svg { flex: none; box-sizing: content-box; padding: 12px; border-radius: 50%; background: var(--pink); color: #fff; }
 .resume span { display: grid; min-width: 0; }
 .resume small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.homeVideo { width: 150px; margin-bottom: 18px; }
+@media (max-width: 420px) { .homeVideo { width: 170px; margin-bottom: 0; } }

@@ -149,6 +149,11 @@ const Settings: FC = () => {
       </label>
 
       <label className={styles.toggle}>
+        <input type="checkbox" checked={draft.videoAvatar} onChange={(e) => patch({ videoAvatar: e.target.checked })} />
+        <span>{s.videoAvatar}</span>
+      </label>
+
+      <label className={styles.toggle}>
         <input type="checkbox" checked={draft.autoSpeak} onChange={(e) => patch({ autoSpeak: e.target.checked })} />
         <span>{s.autoSpeak}</span>
       </label>
