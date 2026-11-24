@@ -1,9 +1,14 @@
 import { GoogleGenAI } from '@google/genai';
 
-let cached: { key: string; ai: GoogleGenAI } | null = null;
+const cache = new Map<string, GoogleGenAI>();
 
-export const getClient = (apiKey: string): GoogleGenAI => {
+export const getClient = (apiKey: string, apiVersion?: string): GoogleGenAI => {
   if (!apiKey) throw Object.assign(new Error('Missing Gemini API key'), { code: 'no_key' });
-  if (cached?.key !== apiKey) cached = { key: apiKey, ai: new GoogleGenAI({ apiKey }) };
-  return cached.ai;
+  const id = `${apiVersion ?? 'default'}:${apiKey}`;
+  let ai = cache.get(id);
+  if (!ai) {
+    ai = new GoogleGenAI(apiVersion ? { apiKey, apiVersion } : { apiKey });
+    cache.set(id, ai);
+  }
+  return ai;
 };

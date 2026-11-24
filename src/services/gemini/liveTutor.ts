@@ -1,6 +1,6 @@
 import { Modality, type LiveServerMessage, type Session } from '@google/genai';
 import { getClient } from './client';
-import { FALLBACK_LIVE_MODEL } from './models';
+import { LIVE_MODEL_CANDIDATES } from './models';
 import { startMic, type MicHandle } from '../audio/mic';
 import { PcmPlayer } from '../audio/player';
 
@@ -29,6 +29,8 @@ export interface LiveTutorOptions {
  * Owns one real-time voice call with Gemini Live: microphone in, tutor voice out,
  * barge-in, captions for both sides, and transparent reconnects (session resumption).
  */
+const WORKING_KEY = 'lingo:v1:live-working';
+
 export class LiveTutor {
   private session: Session | null = null;
   private mic: MicHandle | null = null;
@@ -38,10 +40,57 @@ export class LiveTutor {
   private tutorText = '';
   private closedByUser = false;
   private model: string;
+  private apiVersion: string | undefined;
+  private lean = false;
   private muted = false;
+  private ready = false;
+  private lastClose = '';
 
   constructor(private opts: LiveTutorOptions, private ev: LiveTutorEvents) {
     this.model = opts.model;
+  }
+
+  /** Model/API-version/config combinations to try, last working one first. */
+  private attempts(): { model: string; apiVersion?: string; lean: boolean }[] {
+    const models = [...new Set([this.opts.model, ...LIVE_MODEL_CANDIDATES].filter(Boolean))];
+    const list: { model: string; apiVersion?: string; lean: boolean }[] = [];
+    for (const model of models) {
+      list.push({ model, lean: false }, { model, lean: true }, { model, apiVersion: 'v1alpha', lean: true });
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(WORKING_KEY) ?? 'null') as { model: string; apiVersion?: string; lean: boolean } | null;
+      if (saved?.model) list.unshift(saved);
+    } catch {
+      /* ignore */
+    }
+    return list;
+  }
+
+  /** Tries each combination until one completes setup; reports the server's reason if all fail. */
+  private async connectFirstWorking(): Promise<void> {
+    const reasons: string[] = [];
+    for (const a of this.attempts()) {
+      this.model = a.model;
+      this.apiVersion = a.apiVersion;
+      this.lean = a.lean;
+      this.lastClose = '';
+      try {
+        await this.connect(false);
+        try {
+          localStorage.setItem(WORKING_KEY, JSON.stringify(a));
+        } catch {
+          /* ignore */
+        }
+        return;
+      } catch (e) {
+        // The close event (with the server's reason) arrives just after the error event.
+        await new Promise((r) => setTimeout(r, 400));
+        const reason = this.lastClose || String((e as Error)?.message ?? e);
+        reasons.push(`${a.model}${a.apiVersion ? ` (${a.apiVersion})` : ''}${a.lean ? ' lean' : ''}: ${reason}`);
+        if (/API key|PERMISSION_DENIED|quota|RESOURCE_EXHAUSTED|429|billing/i.test(reason)) break;
+      }
+    }
+    throw new Error(reasons.slice(-3).join(' | ') || 'Live connection failed');
   }
 
   async start(): Promise<void> {
@@ -50,16 +99,7 @@ export class LiveTutor {
     // Audio contexts must be created from the user's tap.
     this.player = new PcmPlayer();
     await this.player.resume();
-    try {
-      await this.connect(false);
-    } catch (e) {
-      if (this.model !== FALLBACK_LIVE_MODEL && /not found|404|not supported/i.test(String((e as Error)?.message ?? e))) {
-        this.model = FALLBACK_LIVE_MODEL;
-        await this.connect(false);
-      } else {
-        throw e;
-      }
-    }
+    await this.connectFirstWorking();
     this.mic = await startMic(
       (data) => this.session?.sendRealtimeInput({ audio: { data, mimeType: 'audio/pcm;rate=16000' } }),
       (lvl) => this.ev.onMicLevel(lvl),
@@ -69,25 +109,39 @@ export class LiveTutor {
   }
 
   private async connect(resuming: boolean): Promise<void> {
-    const ai = getClient(this.opts.apiKey);
+    const ai = getClient(this.opts.apiKey, this.apiVersion);
+    this.ready = false;
+    const base = {
+      responseModalities: [Modality.AUDIO],
+      systemInstruction: this.opts.systemInstruction,
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.opts.voice } } },
+      inputAudioTranscription: {},
+      outputAudioTranscription: {},
+    };
+    const config = this.lean
+      ? base
+      : {
+          ...base,
+          contextWindowCompression: { slidingWindow: {} },
+          sessionResumption: resuming && this.resumeHandle ? { handle: this.resumeHandle } : {},
+        };
     this.session = await ai.live.connect({
       model: this.model,
-      config: {
-        responseModalities: [Modality.AUDIO],
-        systemInstruction: this.opts.systemInstruction,
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.opts.voice } } },
-        inputAudioTranscription: {},
-        outputAudioTranscription: {},
-        contextWindowCompression: { slidingWindow: {} },
-        sessionResumption: resuming && this.resumeHandle ? { handle: this.resumeHandle } : {},
-      },
+      config,
       callbacks: {
-        onopen: () => this.ev.onState('listening'),
         onmessage: (m) => this.handleMessage(m),
-        onerror: (e) => this.ev.onState('error', e.message),
-        onclose: (e) => void this.handleClose(e),
+        onerror: (e) => {
+          if (this.ready) this.ev.onState('error', e.message);
+        },
+        onclose: (e) => {
+          this.lastClose = e.reason ? `${e.reason} (${e.code})` : `closed (${e.code})`;
+          if (this.ready) void this.handleClose(e);
+        },
       },
     });
+    // connect() resolves only after the server confirmed setup.
+    this.ready = true;
+    this.ev.onState('listening');
   }
 
   private handleMessage(m: LiveServerMessage): void {
