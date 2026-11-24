@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+dev-dist/
+*.tsbuildinfo
+
+# android build output (sources are committed)
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+android/app/release/
+*.apk
+*.aab
+
+# secrets — never commit signing keys or env files
+*.jks
+*.keystore
+.env
+.env.*
+
+# editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

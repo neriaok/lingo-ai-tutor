@@ -1,0 +1,39 @@
+/*
+VOICE: playful, warm, confident — a pocket tutor, not a textbook.
+IDEA: a pen-pal postcard & stamp world — big sun-yellow fields, sticker chips, tutor portrait as the "stamp".
+PICTURE: the talking tutor portrait, large, at the top of every learning screen.
+COLOUR and TYPE: sun #ffc93c dominant, ink #1b1b1f, punch pink #ff4f6d accent, turquoise #2ec4b6 support. Rubik (Hebrew+Latin+Cyrillic+Arabic).
+LAYOUT: one phone-width column (max 560px), sticky composer, wraps cleanly at 360px.
+*/
+:root {
+  color-scheme: light dark;
+  --bg: light-dark(#fffaf0, #141318);
+  --card: light-dark(#ffffff, #201e26);
+  --ink: light-dark(#1b1b1f, #f5f2ea);
+  --muted: light-dark(#6b6670, #a7a2ad);
+  --line: light-dark(#ece4d4, #34313b);
+  --sun: light-dark(#ffc93c, #e0a91f);
+  --sun-soft: light-dark(#fff1c7, #2e2716);
+  --pink: #ff4f6d;
+  --pink-soft: light-dark(#ffe3e8, #3a1d24);
+  --teal: #2ec4b6;
+  --teal-soft: light-dark(#dcf7f4, #15302e);
+  --radius: 20px;
+  --shadow: 0 2px 0 var(--line), 0 10px 30px -18px rgba(0, 0, 0, 0.35);
+}
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
+* { box-sizing: border-box; min-width: 0; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 Rubik, 'Segoe UI', Arial, sans-serif;
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; line-height: 1.1; text-wrap: balance; }
