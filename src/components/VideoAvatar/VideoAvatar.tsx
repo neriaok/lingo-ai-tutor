@@ -1,4 +1,4 @@
-import { useEffect, useRef, type FC } from 'react';
+import { useEffect, useRef, useState, type FC } from 'react';
 import clsx from 'clsx';
 import { tutorInfo } from '../../data/catalog';
 import { getMouthLevel, isSpeaking } from '../../services/audio/mouth';
@@ -7,101 +7,84 @@ import styles from './VideoAvatar.module.css';
 
 interface VideoAvatarProps {
   tutor: TutorId;
-  /** 'loop': gentle idle clip. 'lipsync': a single talking clip that plays only while the tutor's voice is audible. */
+  /** 'loop': gentle idle clip. 'lipsync': the talking clip plays only while the tutor's voice is audible. */
   mode: 'loop' | 'lipsync';
   className?: string;
   onFail?: () => void;
 }
 
 const VOICE_THRESHOLD = 0.06;
-// How long the voice must be quiet before the mouth stops (ignores tiny gaps between syllables).
-const SILENCE_MS = 160;
-// After silence, keep playing at most this long to land on a closed-mouth frame, then snap to the nearest one.
-const SETTLE_MS = 320;
-
-const nearest = (list: number[], t: number): number =>
-  list.reduce((best, x) => (Math.abs(x - t) < Math.abs(best - t) ? x : best), list[0] ?? 0);
+// Quiet this long = the tutor stopped talking (ignores tiny gaps between syllables).
+const SILENCE_MS = 180;
 
 /**
- * Video tutor. In lipsync mode there is only ONE clip, so the head never jumps between videos:
- * it plays while the voice is audible and pauses on a closed-mouth frame when the tutor is silent.
+ * Video tutor. In lipsync mode one talking clip plays while the voice is audible.
+ * When the tutor is silent we fade to a still of the clip's first frame (eyes open, mouth closed)
+ * and rewind behind it — so she never freezes mid-blink or with her mouth open, and the next
+ * sentence starts seamlessly from that same frame.
  */
 const VideoAvatar: FC<VideoAvatarProps> = ({ tutor, mode, className, onFail }) => {
   const t = tutorInfo(tutor);
   const ref = useRef<HTMLVideoElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
-  const rest = t.talkRest ?? [];
+  const [talking, setTalking] = useState(false);
 
   useEffect(() => {
     const v = ref.current;
     if (!v || mode !== 'lipsync') return undefined;
     let raf = 0;
-    let lastVoice = 0;
-    let silentSince = 0;
-    let talking = false;
-
-    const atRest = (): boolean => rest.some((x) => Math.abs(x - v.currentTime) < 0.03);
+    let lastVoice = -Infinity;
+    let on = false;
+    let rewindTimer = 0;
 
     const tick = (now: number): void => {
-      const voice = isSpeaking() && getMouthLevel() > VOICE_THRESHOLD;
-      if (voice) lastVoice = now;
+      if (isSpeaking() && getMouthLevel() > VOICE_THRESHOLD) lastVoice = now;
       const shouldTalk = now - lastVoice < SILENCE_MS;
-
-      if (shouldTalk) {
-        silentSince = 0;
-        if (!talking || v.paused) {
-          talking = true;
-          v.play().catch(() => undefined);
-        }
-      } else if (talking) {
-        if (!silentSince) silentSince = now;
-        if (atRest()) {
+      if (shouldTalk && !on) {
+        on = true;
+        window.clearTimeout(rewindTimer);
+        setTalking(true);
+        v.play().catch(() => undefined);
+      } else if (!shouldTalk && on) {
+        on = false;
+        setTalking(false);
+        // Rewind once the still image has faded in over the video.
+        rewindTimer = window.setTimeout(() => {
           v.pause();
-          talking = false;
-        } else if (now - silentSince > SETTLE_MS) {
-          v.pause();
-          if (rest.length) v.currentTime = nearest(rest, v.currentTime);
-          talking = false;
-        }
+          v.currentTime = 0;
+        }, 200);
       }
-      frameRef.current?.classList.toggle(styles.still, !talking);
       raf = requestAnimationFrame(tick);
     };
-
-    const start = (): void => {
-      if (rest.length) v.currentTime = rest[0];
-      raf = requestAnimationFrame(tick);
-    };
-    if (v.readyState >= 1) start();
-    else v.addEventListener('loadedmetadata', start, { once: true });
-
+    raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
-      v.removeEventListener('loadedmetadata', start);
+      window.clearTimeout(rewindTimer);
     };
-  }, [mode, rest]);
+  }, [mode]);
 
-  const clip = mode === 'lipsync' ? 'talk' : 'idle';
+  const lipsync = mode === 'lipsync';
 
   return (
     <div
-      ref={frameRef}
-      className={clsx(styles.frame, mode === 'lipsync' && styles.still, className)}
+      className={clsx(styles.frame, lipsync && !talking && styles.still, className)}
       style={{ ['--avatar-bg' as string]: t.videoBg ?? 'var(--sun)' }}
     >
       <video
         ref={ref}
         className={styles.clip}
-        src={`./avatars/${t.id}-${clip}.mp4`}
-        poster={`./avatars/${t.id}-${mode === 'lipsync' ? 'talk-poster' : 'poster'}.jpg`}
+        src={`./avatars/${t.id}-${lipsync ? 'talk' : 'idle'}.mp4`}
+        poster={`./avatars/${t.id}-${lipsync ? 'talk-poster' : 'poster'}.jpg`}
         muted
         playsInline
         loop
         preload="auto"
-        autoPlay={mode === 'loop'}
+        autoPlay={!lipsync}
         aria-label={t.name}
         onError={onFail}
       />
+      {lipsync && (
+        <img className={clsx(styles.rest, !talking && styles.restOn)} src={`./avatars/${t.id}-talk-poster.jpg`} alt="" aria-hidden="true" />
+      )}
     </div>
   );
 };

@@ -88,8 +88,6 @@ export interface TutorInfo {
   glasses: boolean;
   /** Animated clips available in public/avatars (Gemini/Veo renders). */
   clips?: ('idle' | 'talk')[];
-  /** Times (s) in the talk clip where the mouth is closed — measured from the video, used to stop cleanly. */
-  talkRest?: number[];
   /** Background colour of those clips, used for the stage behind them. */
   videoBg?: string;
 }
@@ -100,7 +98,6 @@ export const TUTORS: TutorInfo[] = [
     persona: 'warm, patient and encouraging; celebrates small wins; speaks slowly and clearly',
     voice: 'Aoede', pitch: 1.15, skin: '#f2c6a0', hair: '#3b2416', shirt: '#ff4f6d', style: 'bob', glasses: false,
     clips: ['idle', 'talk'], videoBg: '#f5bd23',
-    talkRest: [0.583, 0.625, 1.25, 1.292, 1.333, 1.375, 1.417, 1.542, 2.417, 2.458, 2.625, 2.667, 2.708, 2.75, 2.792, 2.833, 2.875, 2.917, 2.958, 3.042, 3.333, 4.458, 4.5, 4.542, 4.583, 4.625, 4.667, 4.708, 4.75, 4.792, 4.833, 5.542, 5.583, 5.625, 6.625, 6.667, 6.708, 6.75, 6.875, 6.917, 7.042, 7.083, 7.125, 8.792, 8.833, 8.875, 8.917, 9.042, 9.083, 9.208, 9.25, 9.292, 9.333, 10.333, 10.375, 10.417, 11.125, 11.167, 11.208, 11.25, 11.292, 11.333, 11.375, 11.417, 11.458, 11.5, 11.542, 12.625, 12.917, 13.0, 13.042, 13.083, 13.125, 13.167, 13.208, 13.25, 13.292, 13.333, 13.375, 13.5, 13.542, 14.417, 14.542, 14.583, 14.625, 14.667, 14.708, 15.333, 15.375, 15.708, 15.75, 15.792, 15.833, 15.875, 15.917, 15.958],
   },
   {
     id: 'leo', name: 'Leo', he: 'מצחיק וקליל', en: 'Funny & casual',

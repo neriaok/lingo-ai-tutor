@@ -9,7 +9,7 @@
   -webkit-mask-image: radial-gradient(ellipse 72% 70% at 50% 45%, #000 78%, transparent 100%);
   mask-image: radial-gradient(ellipse 72% 70% at 50% 45%, #000 78%, transparent 100%);
 }
-.clip {
+.clip, .rest {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -17,10 +17,12 @@
   object-fit: cover;
   transform-origin: 50% 85%;
 }
+.rest { opacity: 0; transition: opacity 0.18s ease-out; pointer-events: none; }
+.restOn { opacity: 1; transition-duration: 0.15s; }
 /* While the video is paused (tutor silent) keep her alive with a slow, tiny breath. */
-.still .clip { animation: breathe 3.6s ease-in-out infinite; }
+.still .clip, .still .rest { animation: breathe 3.6s ease-in-out infinite; }
 @keyframes breathe {
   0%, 100% { transform: scale(1) translateY(0); }
   50% { transform: scale(1.012) translateY(-1px); }
 }
-@media (prefers-reduced-motion: reduce) { .still .clip { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .still .clip, .still .rest { animation: none; } }
