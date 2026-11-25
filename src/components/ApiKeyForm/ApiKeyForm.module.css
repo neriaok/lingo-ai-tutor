@@ -26,3 +26,4 @@
 .ok { border-color: var(--teal); }
 .err { margin: 0; color: var(--pink); font-size: 14px; }
 .okText { margin: 0; display: inline-flex; align-items: center; gap: 4px; color: var(--teal); font-weight: 700; font-size: 14px; }
+.guideBtn { justify-self: start; min-height: 40px; padding: 0 14px; border: 2px dashed var(--line); border-radius: 99px; background: transparent; color: var(--ink); font-size: 14px; font-weight: 500; }

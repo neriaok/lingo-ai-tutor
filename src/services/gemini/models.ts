@@ -15,7 +15,10 @@ export const FEEDBACK_MODEL = 'gemini-3.1-flash-lite';
 /** Quick key check: lists models with the key (no SDK needed). */
 export const validateKey = async (apiKey: string): Promise<boolean> => {
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=1&key=${encodeURIComponent(apiKey)}`);
+    // Header auth works for both classic (AIza…) and newer (AQ.…) keys.
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', {
+      headers: { 'x-goog-api-key': apiKey },
+    });
     return res.ok;
   } catch {
     return false;

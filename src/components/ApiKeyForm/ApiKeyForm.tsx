@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useStrings } from '../../hooks/useStrings';
 import { validateKey } from '../../services/gemini/models';
 import Icon from '../Icon';
+import KeyGuide from '../KeyGuide';
 import ui from '../ui.module.css';
 import styles from './ApiKeyForm.module.css';
 
@@ -18,6 +19,7 @@ const ApiKeyForm: FC<ApiKeyFormProps> = ({ initialKey, onValid }) => {
   const s = useStrings();
   const [key, setKey] = useState(initialKey);
   const [status, setStatus] = useState<'idle' | 'checking' | 'ok' | 'bad'>(initialKey ? 'ok' : 'idle');
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
@@ -35,6 +37,10 @@ const ApiKeyForm: FC<ApiKeyFormProps> = ({ initialKey, onValid }) => {
       <a className={styles.link} href={AI_STUDIO_URL} target="_blank" rel="noreferrer">
         <Icon name="key" size={18} /> {s.getKey} ↗
       </a>
+      <button type="button" className={styles.guideBtn} onClick={() => setGuideOpen(true)}>
+        {s.guideOpen}
+      </button>
+      {guideOpen && <KeyGuide url={AI_STUDIO_URL} onClose={() => setGuideOpen(false)} />}
       <input
         className={clsx(styles.input, status === 'bad' && styles.bad, status === 'ok' && styles.ok)}
         value={key}
