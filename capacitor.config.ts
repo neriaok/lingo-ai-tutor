@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   // The Android app loads the live web app, so every push to main reaches the phone
   // without reinstalling the APK. The bundled copy is only used for the offline page.
   server: {
-    url: 'https://lingo.neriaokabik.workers.dev/',
+    url: 'https://neriaok.github.io/lingo-ai-tutor/',
     androidScheme: 'https',
     errorPath: 'offline.html',
   },

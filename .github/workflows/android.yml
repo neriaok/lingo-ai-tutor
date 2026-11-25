@@ -77,6 +77,6 @@ jobs:
           files: Lingo.apk
           body: |
             📱 **Install:** download `Lingo.apk` below on your Android phone and open it (allow "install unknown apps" once).
-            🌐 **Web version:** https://lingo.neriaokabik.workers.dev/
+            🌐 **Web version:** https://neriaok.github.io/lingo-ai-tutor/
 
             Built automatically from ${{ github.sha }}.

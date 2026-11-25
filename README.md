@@ -6,12 +6,12 @@
 
 **Talk, don't type.** A real-time voice tutor with an animated avatar that holds natural spoken conversations, adapts to your level and interests, and quietly writes down your mistakes and new words for you.
 
-[![Web checks](https://github.com/neriaok/lingo-ai-tutor/actions/workflows/deploy-web.yml/badge.svg)](https://github.com/neriaok/lingo-ai-tutor/actions/workflows/deploy-web.yml)
+[![Deploy web app](https://github.com/neriaok/lingo-ai-tutor/actions/workflows/deploy-web.yml/badge.svg)](https://github.com/neriaok/lingo-ai-tutor/actions/workflows/deploy-web.yml)
 [![Build Android APK](https://github.com/neriaok/lingo-ai-tutor/actions/workflows/android.yml/badge.svg)](https://github.com/neriaok/lingo-ai-tutor/actions/workflows/android.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-[**🌐 Open the web app**](https://lingo.neriaokabik.workers.dev/) · [**📱 Download the Android APK**](https://github.com/neriaok/lingo-ai-tutor/releases/latest/download/Lingo.apk)
+[**🌐 Open the web app**](https://neriaok.github.io/lingo-ai-tutor/) · [**📱 Download the Android APK**](https://github.com/neriaok/lingo-ai-tutor/releases/latest/download/Lingo.apk)
 
 </div>
 
@@ -59,7 +59,7 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 
 ## Getting started (users)
 
-1. Open the [web app](https://lingo.neriaokabik.workers.dev/) or install the [APK](https://github.com/neriaok/lingo-ai-tutor/releases/latest/download/Lingo.apk).
+1. Open the [web app](https://neriaok.github.io/lingo-ai-tutor/) or install the [APK](https://github.com/neriaok/lingo-ai-tutor/releases/latest/download/Lingo.apk).
 2. Pick your languages, level, interests and tutor.
 3. Create a free API key at [Google AI Studio](https://aistudio.google.com/apikey) and paste it in. It takes about a minute.
 4. Tap **Call** and just talk.
@@ -116,10 +116,10 @@ npm run android:sync # build + copy into the Android project
 | Workflow | Trigger | Output |
 |---|---|---|
 | `ci.yml` | pull request | Lint, type-check, unit tests and build |
-| `deploy-web.yml` | push to `main` | Lint, type-check, tests and build; keeps the old GitHub Pages address redirecting to the new one |
+| `deploy-web.yml` | push to `main` | Lint, type-check, tests, then build and deploy to GitHub Pages |
 | `android.yml` | push to `main` | Builds a signed release APK and publishes it as a GitHub Release (`Lingo.apk`) |
 
-**Hosting.** The web app is served from Cloudflare Workers static assets (`wrangler.jsonc`) at <https://lingo.neriaokabik.workers.dev/>. Cloudflare Workers Builds deploys it on every push to `main` (`npm run build` → `npx wrangler deploy`), and deploys the reminder worker in `worker/` the same way.
+**Hosting.** The web app is served from GitHub Pages. The daily-reminder worker in `worker/` runs on Cloudflare Workers and is deployed by Cloudflare Workers Builds on pushes to `main`.
 
 APK signing uses four repository secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Without them, CI falls back to a debug key.
 
