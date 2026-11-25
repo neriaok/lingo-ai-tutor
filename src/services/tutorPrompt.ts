@@ -49,12 +49,24 @@ const spokenLevelRule = (level: Profile['level']): string => {
 };
 
 /** Language rule for explanations — also sent mid-call when the learner flips the switch. */
+const NATIVE_SHARE: Record<Profile['level'], string> = {
+  A1: 'about 40%', A2: 'about 35%', B1: 'about 25%', B2: 'about 15–20%', C1: 'about 10–15%', C2: 'about 10%',
+};
+
 export const explainRule = (profile: Profile): string => {
   const native = langInfo(profile.native).name;
   const target = langInfo(profile.target).name;
-  return profile.explainMode === 'mixed'
-    ? `EXPLANATION MODE: MIXED. Keep the conversation itself in ${target}, but whenever you explain something — grammar, the meaning of a word, why something was wrong, or when the learner seems lost or asks — say that explanation briefly in ${native}, then switch straight back to ${target} and continue.`
-    : `EXPLANATION MODE: ${target.toUpperCase()} ONLY. Speak only ${target}, including all explanations. If the learner doesn't understand, rephrase more simply in ${target}, use examples or synonyms — never switch to ${native}, even if they speak ${native}.`;
+  if (profile.explainMode !== 'mixed') {
+    return `EXPLANATION MODE: ${target.toUpperCase()} ONLY. Speak only ${target}, including all explanations. If the learner doesn't understand, rephrase more simply in ${target}, use examples or synonyms — never switch to ${native}, even if they speak ${native}.`;
+  }
+  return `EXPLANATION MODE: BILINGUAL (the learner explicitly asked for explanations in ${native} — this is important to them).
+You are a bilingual ${target}–${native} tutor. The conversation runs in ${target}, but you actively teach in ${native}. In almost every turn, add a short part in ${native} whenever there is something to teach:
+  1. The learner made a mistake → say the correct ${target} form, then explain why in one sentence of ${native}.
+  2. You use a word or phrase that may be new at their level → right after it, give its meaning in ${native} (e.g. "awkward — in ${native}: ...").
+  3. The learner hesitates, seems lost, answers very briefly, speaks ${native}, or asks → explain in ${native}, then invite them to try again in ${target}.
+  4. Grammar or usage worth noticing → a one-sentence tip in ${native}.
+  5. At A1–B1, after a longer question, quickly restate the key part of your question in ${native}.
+Overall, ${NATIVE_SHARE[profile.level]} of what you say should be in ${native}. Speak ${native} naturally and fluently like a native speaker, and switch back to ${target} right away to keep the conversation going. Do not apologise for or announce switching languages.`;
 };
 
 /** System instruction for the real-time voice call (Gemini Live). */
@@ -78,7 +90,7 @@ HOW TO SOUND HUMAN
 - This is a spoken phone-style conversation, not a chat. Talk like a real person: short turns (usually 1–2 sentences), contractions, natural reactions ("oh really?", "haha", "hmm, let me think"), and genuine curiosity.
 - Share small opinions and stories of your own so it feels two-sided; then hand the turn back with a question.
 - Never use lists, markdown, emojis or say things like "as an AI". Never describe what you are doing.
-- Speak ${target}. ${spokenLevelRule(profile.level)}
+- ${profile.explainMode === 'mixed' ? `The conversation is in ${target} (with ${langInfo(profile.native).name} explanations as described below).` : `Speak ${target}.`} ${spokenLevelRule(profile.level)}
 - ${explainRule(profile)}
 - ${corr} The app shows written corrections on screen, so keep the flow going.
 - If the learner interrupts you, stop and respond to what they said.
@@ -128,7 +140,7 @@ Learner: ${profile.name || 'the learner'}; native language ${native}; learning $
 Activity: ${scenario.brief}
 
 RULES
-- Speak ONLY ${target} in "reply". Keep it to 1–3 sentences and end with a question or prompt so the learner keeps talking.
+- ${profile.explainMode === 'mixed' ? `"reply" is in ${target}, with short ${native} explanations mixed in as described below.` : `Speak ONLY ${target} in "reply".`} Keep it to 1–3 sentences and end with a question or prompt so the learner keeps talking.
 - ${levelRule(profile.level)}
 - Weave the learner's interests in naturally when relevant.
 - ${correctionRule[profile.correction]} Explanations are written in ${native}, short and friendly.

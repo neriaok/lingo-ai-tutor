@@ -11,7 +11,7 @@ import { updateProfile } from '../../features/profile/profileSlice';
 import { addMinutes, addMistake, addXp, saveWord } from '../../features/progress/progressSlice';
 import { addMessage, setSummary, setView, updateMessage } from '../../features/session/sessionSlice';
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
-import { buildLiveInstruction, explainRule } from '../../services/tutorPrompt';
+import { buildLiveInstruction } from '../../services/tutorPrompt';
 import { stopSpeaking } from '../../services/speech';
 import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
@@ -221,10 +221,21 @@ const Call: FC = () => {
     }
   };
 
-  const handleExplainMode = (explainMode: ExplainMode): void => {
+  /** The explanation language lives in the system instruction, so switching reconnects with the transcript. */
+  const handleExplainMode = async (explainMode: ExplainMode): Promise<void> => {
+    if (explainMode === profileRef.current.explainMode) return;
     dispatch(updateProfile({ explainMode }));
-    const rule = explainRule({ ...profileRef.current, explainMode });
-    tutorRef.current?.sendInstruction(`(The learner just changed a setting. ${rule} Apply it from your next sentence on, without commenting on the change.)`);
+    profileRef.current = { ...profileRef.current, explainMode };
+    const t = tutorRef.current;
+    if (!t) return;
+    tutorRef.current = null;
+    setTapTalking(false);
+    await t.stop('connecting');
+    await startCall(
+      explainMode === 'mixed'
+        ? '(Same call, just reconnected. Do not greet again. From now on explain in the learner\'s native language as instructed — start by briefly explaining your last message in it, then continue.)'
+        : '(Same call, just reconnected. Do not greet again. From now on speak only the target language. Continue naturally from the last message.)',
+    );
   };
 
   /** Switching turn mode needs a new Live session; the transcript carries the conversation over. */
@@ -383,7 +394,7 @@ const Call: FC = () => {
           native={profile.native}
           target={profile.target}
           label={s.explainLabel}
-          onChange={handleExplainMode}
+          onChange={(m) => void handleExplainMode(m)}
         />
       </div>
 

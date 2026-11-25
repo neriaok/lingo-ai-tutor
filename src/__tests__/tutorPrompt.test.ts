@@ -13,7 +13,11 @@ describe('tutor prompts', () => {
   });
 
   it('explains in the native language in "mixed" mode', () => {
-    expect(explainRule({ ...defaultProfile, explainMode: 'mixed' })).toContain('briefly in Hebrew');
+    const rule = explainRule({ ...defaultProfile, explainMode: 'mixed' });
+    expect(rule).toContain('BILINGUAL');
+    expect(rule).toContain('of what you say should be in Hebrew');
+    const live = buildLiveInstruction({ ...defaultProfile, explainMode: 'mixed' }, scenario);
+    expect(live).not.toContain('- Speak English.');
   });
 
   it.each(TUTORS.map((t) => [t.id, t]))('gives %s its own personality', (_id, tutor) => {
