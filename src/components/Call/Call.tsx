@@ -14,7 +14,7 @@ import { addMinutes, addMistake, addXp, saveWord } from '../../features/progress
 import { addMessage, setSummary, setView, updateMessage } from '../../features/session/sessionSlice';
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
 import { buildLiveInstruction } from '../../services/tutorPrompt';
-import { startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
+import { onBackgroundCallAction, startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
 import { stopSpeaking } from '../../services/speech';
 import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
@@ -357,11 +357,30 @@ const Call: FC = () => {
 
   // Android app: a foreground service keeps the mic alive while you use other apps.
   const backgroundActive = live && mode === 'voice' && profile.backgroundCall;
+  const actionsRef = useRef({ handleMute, handleEnd });
+  actionsRef.current = { handleMute, handleEnd };
   useEffect(() => {
     if (!backgroundActive) return undefined;
-    void startBackgroundCall(`${tutor.name} · Lingo`, s.backgroundNotice);
+    return onBackgroundCallAction((action) => {
+      if (action === 'mute') actionsRef.current.handleMute();
+      else void actionsRef.current.handleEnd();
+    });
+  }, [backgroundActive]);
+  useEffect(() => {
+    if (!backgroundActive) return;
+    void startBackgroundCall({
+      title: `${tutor.name} · Lingo`,
+      text: muted ? s.mute : s.backgroundNotice,
+      muted,
+      muteLabel: s.mute,
+      unmuteLabel: s.unmute,
+      hangupLabel: s.endCall,
+    });
+  }, [backgroundActive, muted, tutor.name, s]);
+  useEffect(() => {
+    if (!backgroundActive) return undefined;
     return () => void stopBackgroundCall();
-  }, [backgroundActive, tutor.name, s.backgroundNotice]);
+  }, [backgroundActive]);
   useCallMediaSession({
     active: live && mode === 'voice',
     title: `${tutor.name} · Lingo`,
