@@ -2,12 +2,12 @@
 
 const WORKLET = `
 class PcmCapture extends AudioWorkletProcessor {
-  constructor() { super(); this.ratio = sampleRate / 16000; this.acc = []; this.pos = 0; }
+  constructor() { super(); this.ratio = sampleRate / 16000; this.acc = []; this.pos = 0; this.sum = 0; this.n = 0; }
   process(inputs) {
     const ch = inputs[0] && inputs[0][0];
     if (!ch) return true;
-    let sum = 0;
-    for (let i = 0; i < ch.length; i++) sum += ch[i] * ch[i];
+    for (let i = 0; i < ch.length; i++) this.sum += ch[i] * ch[i];
+    this.n += ch.length;
     // Simple decimation with averaging to 16 kHz.
     while (this.pos < ch.length) {
       const a = Math.floor(this.pos), b = Math.min(ch.length - 1, Math.floor(this.pos + this.ratio));
@@ -23,8 +23,11 @@ class PcmCapture extends AudioWorkletProcessor {
         const v = Math.max(-1, Math.min(1, this.acc[i]));
         out[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
       }
-      this.port.postMessage({ pcm: out.buffer, level: Math.sqrt(sum / ch.length) }, [out.buffer]);
+      // RMS over the whole ~100 ms chunk.
+      this.port.postMessage({ pcm: out.buffer, level: Math.sqrt(this.sum / Math.max(1, this.n)) }, [out.buffer]);
       this.acc = [];
+      this.sum = 0;
+      this.n = 0;
     }
     return true;
   }
@@ -49,7 +52,7 @@ export interface MicHandle {
 }
 
 export const startMic = async (
-  onChunk: (base64: string) => void,
+  onChunk: (base64: string, level: number) => void,
   onLevel: (level: number) => void,
 ): Promise<MicHandle> => {
   const stream = await navigator.mediaDevices.getUserMedia({
@@ -64,7 +67,7 @@ export const startMic = async (
   let muted = false;
   node.port.onmessage = (e: MessageEvent<{ pcm: ArrayBuffer; level: number }>) => {
     onLevel(muted ? 0 : e.data.level);
-    if (!muted) onChunk(toBase64(e.data.pcm));
+    if (!muted) onChunk(toBase64(e.data.pcm), e.data.level);
   };
   source.connect(node);
   // Keep the graph pulled without sending mic audio to the speakers.

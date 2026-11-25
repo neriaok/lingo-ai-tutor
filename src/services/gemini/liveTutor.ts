@@ -56,6 +56,8 @@ export interface LiveTutorOptions {
  * barge-in, captions for both sides, and transparent reconnects (session resumption).
  */
 const WORKING_KEY = 'lingo:v1:live-working';
+// Mic RMS that counts as the learner talking over the tutor (echo after cancellation is far quieter).
+const BARGE_IN_LEVEL = 0.035;
 
 export class LiveTutor {
   private session: Session | null = null;
@@ -80,6 +82,8 @@ export class LiveTutor {
    * mic is held back while the tutor is speaking — otherwise it hears (and imitates) its own voice.
    */
   private echoGuard = false;
+  /** Keeps the gate open briefly after loud speech so a barge-in isn't chopped. */
+  private bargeOpenUntil = 0;
 
   constructor(private opts: LiveTutorOptions, private ev: LiveTutorEvents) {
     this.model = opts.model;
@@ -94,7 +98,7 @@ export class LiveTutor {
     }
     try {
       const saved = JSON.parse(localStorage.getItem(WORKING_KEY) ?? 'null') as { model: string; apiVersion?: string; lean: boolean } | null;
-      if (saved?.model) list.unshift(saved);
+      if (saved?.model && saved.model === this.opts.model) list.unshift(saved);
     } catch {
       /* ignore */
     }
@@ -136,10 +140,18 @@ export class LiveTutor {
     await this.player.resume();
     await this.connectFirstWorking();
     this.mic = await startMic(
-      (data) => {
+      (data, level) => {
         if (this.opts.turnMode === 'tap' && !this.talking) return;
-        if (Date.now() < this.holdMicUntil) return;
-        if (this.echoGuard && this.player?.isPlaying()) return;
+        const now = Date.now();
+        if (now < this.holdMicUntil) return;
+        if (this.player?.isPlaying() && this.opts.turnMode === 'auto') {
+          // Echo gate: while the tutor speaks, only real speech close to the mic gets through
+          // (so you can still interrupt), never the tutor's own voice leaking from the speaker —
+          // hearing itself makes the native-audio model drift into a different voice.
+          if (this.echoGuard) return;
+          if (level >= BARGE_IN_LEVEL) this.bargeOpenUntil = now + 400;
+          if (now > this.bargeOpenUntil) return;
+        }
         this.session?.sendRealtimeInput({ audio: { data, mimeType: 'audio/pcm;rate=16000' } });
       },
       (lvl) => this.ev.onMicLevel(lvl),

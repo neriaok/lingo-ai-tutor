@@ -16,6 +16,11 @@ import Icon from '../Icon';
 import ui from '../ui.module.css';
 import styles from './Settings.module.css';
 
+const VOICE_ENGINES: [string, 'engineNew' | 'engineStable'][] = [
+  ['gemini-3.1-flash-live-preview', 'engineNew'],
+  ['gemini-2.5-flash-native-audio-preview-12-2025', 'engineStable'],
+];
+
 const APK_URL = 'https://github.com/neriaok/lingo-ai-tutor/releases/latest/download/Lingo.apk';
 
 const Settings: FC = () => {
@@ -224,6 +229,18 @@ const Settings: FC = () => {
         <input type="checkbox" checked={draft.autoSpeak} onChange={(e) => patch({ autoSpeak: e.target.checked })} />
         <span>{s.autoSpeak}</span>
       </label>
+
+      <div className={styles.field}>
+        <span className={ui.label}>{s.voiceEngine}</span>
+        <div className={styles.row}>
+          {VOICE_ENGINES.map(([id, label]) => (
+            <button key={id} type="button" className={clsx(ui.chip, draft.liveModel === id && ui.chipOn)} onClick={() => patch({ liveModel: id })}>
+              {s[label]}
+            </button>
+          ))}
+        </div>
+        <p className={styles.help}>{s.voiceEngineHint}</p>
+      </div>
 
       <details className={styles.advanced}>
         <summary>{s.advanced}</summary>
