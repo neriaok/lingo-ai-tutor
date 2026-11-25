@@ -49,6 +49,8 @@ export interface LiveTutorOptions {
   turnMode: 'auto' | 'tap';
   /** Pause length (ms) that ends the learner's turn in auto mode. */
   silenceMs: number;
+  /** BCP-47 codes the learner speaks (target + native), so captions aren't guessed as other languages. */
+  languageCodes: string[];
 }
 
 /**
@@ -84,6 +86,8 @@ export class LiveTutor {
   private echoGuard = false;
   /** Keeps the gate open briefly after loud speech so a barge-in isn't chopped. */
   private bargeOpenUntil = 0;
+  /** Re-sends a text turn through realtime input if the model ignored it (some models only answer that way). */
+  private replyWatchdog = 0;
 
   constructor(private opts: LiveTutorOptions, private ev: LiveTutorEvents) {
     this.model = opts.model;
@@ -157,7 +161,19 @@ export class LiveTutor {
       (lvl) => this.ev.onMicLevel(lvl),
     );
     this.mic.setMuted(this.muted);
-    this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text: this.opts.opener }] }], turnComplete: true });
+    this.sendTurn(this.opts.opener);
+  }
+
+  /** Sends a text turn; if no reply starts within a few seconds, retries it as realtime text. */
+  private sendTurn(text: string): void {
+    this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true });
+    window.clearTimeout(this.replyWatchdog);
+    this.replyWatchdog = window.setTimeout(() => {
+      if (!this.session) return;
+      if (this.opts.turnMode === 'tap') this.session.sendRealtimeInput({ activityStart: {} });
+      this.session.sendRealtimeInput({ text });
+      if (this.opts.turnMode === 'tap') this.session.sendRealtimeInput({ activityEnd: {} });
+    }, 6000);
   }
 
   private async connect(resuming: boolean): Promise<void> {
@@ -188,6 +204,7 @@ export class LiveTutor {
       : {
           ...base,
           tools: this.ev.onSong ? TOOLS : undefined,
+          inputAudioTranscription: this.opts.languageCodes.length ? { languageCodes: this.opts.languageCodes } : {},
           contextWindowCompression: { slidingWindow: {} },
           sessionResumption: resuming && this.resumeHandle ? { handle: this.resumeHandle } : {},
         };
@@ -228,6 +245,8 @@ export class LiveTutor {
 
     const sc = m.serverContent;
     if (!sc) return;
+
+    if (sc.modelTurn || sc.outputTranscription) window.clearTimeout(this.replyWatchdog);
 
     if (sc.interrupted) {
       // Learner barged in — cut the tutor off immediately.
@@ -290,7 +309,7 @@ export class LiveTutor {
   sendText(text: string): void {
     this.player?.interrupt();
     this.userText = text;
-    this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true });
+    this.sendTurn(text);
   }
 
   /** Tap mode: learner starts talking (also cuts the tutor off). */
@@ -346,6 +365,7 @@ export class LiveTutor {
 
   async stop(finalState: CallState = 'ended'): Promise<void> {
     this.closedByUser = true;
+    window.clearTimeout(this.replyWatchdog);
     await this.mic?.stop();
     this.mic = null;
     try {
