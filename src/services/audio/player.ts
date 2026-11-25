@@ -69,6 +69,10 @@ export class PcmPlayer {
     };
   }
 
+  isPlaying(): boolean {
+    return this.sources.size > 0;
+  }
+
   /** Stops everything queued — used when the learner barges in. */
   interrupt(): void {
     this.sources.forEach((s) => {

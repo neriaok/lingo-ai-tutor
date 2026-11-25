@@ -18,6 +18,8 @@ export const defaultProfile: Profile = {
   tutor: 'maya',
   correction: 'gentle',
   explainMode: 'target',
+  turnMode: 'auto',
+  thinkTime: 'normal',
   videoAvatar: true,
   dailyMinutes: 10,
   speechRate: 0.95,

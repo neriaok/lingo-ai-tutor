@@ -34,6 +34,8 @@
 .status i { width: 8px; height: 8px; border-radius: 50%; background: #9aa0a6; }
 .listening i { background: var(--teal); animation: breathe 1.4s infinite; }
 .speaking i { background: var(--pink); }
+.thinking i { background: #ffd166; animation: breathe 0.8s infinite; }
+.idle i { background: #9aa0a6; }
 .error i { background: var(--pink); }
 .reconnecting i, .connecting i { background: #ffd166; animation: breathe 0.8s infinite; }
 .status.paused i { background: #ffd166; }
@@ -117,3 +119,16 @@
 .pausedCard { display: grid; gap: 8px; justify-items: start; padding: 14px 16px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
 .pausedCard p { margin: 0; color: var(--muted); font-size: 15px; }
 .pausedCard strong { font-size: 18px; }
+.nudge {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  background: var(--card);
+  font-weight: 700;
+}
+.talk svg { background: var(--ink); color: var(--bg); box-shadow: none; padding: 20px; }
+.talkOn svg { background: var(--teal); color: #fff; animation: talkPulse 1.2s infinite; }
+@keyframes talkPulse { 50% { box-shadow: 0 0 0 10px rgba(46, 196, 182, 0.25); } }
+@media (prefers-reduced-motion: reduce) { .talkOn svg, .thinking i { animation: none; } }

@@ -37,7 +37,9 @@ const Onboarding: FC = () => {
     (step !== 1 || draft.native !== draft.target) && (step !== 3 || draft.interests.length >= 3);
 
   const handleFinish = (): void => {
-    dispatch(completeOnboarding(draft));
+    // Beginners get more time to think before the tutor takes the turn.
+    const thinkTime = draft.level === 'A1' || draft.level === 'A2' ? 'long' : draft.thinkTime;
+    dispatch(completeOnboarding({ ...draft, thinkTime }));
     dispatch(startSession(placement ? 'placement' : 'free'));
   };
 

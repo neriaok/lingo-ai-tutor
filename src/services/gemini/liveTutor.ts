@@ -1,10 +1,10 @@
-import { Modality, type LiveServerMessage, type Session } from '@google/genai';
+import { EndSensitivity, Modality, StartSensitivity, type LiveServerMessage, type Session } from '@google/genai';
 import { getClient } from './client';
 import { LIVE_MODEL_CANDIDATES } from './models';
 import { startMic, type MicHandle } from '../audio/mic';
 import { PcmPlayer } from '../audio/player';
 
-export type CallState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'reconnecting' | 'paused' | 'ended' | 'error';
+export type CallState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'reconnecting' | 'paused' | 'ended' | 'error';
 
 export interface LiveTutorEvents {
   onState: (state: CallState, detail?: string) => void;
@@ -23,6 +23,10 @@ export interface LiveTutorOptions {
   voice: string;
   systemInstruction: string;
   opener: string;
+  /** 'auto' = server voice-activity detection; 'tap' = the learner marks start/end of each turn. */
+  turnMode: 'auto' | 'tap';
+  /** Pause length (ms) that ends the learner's turn in auto mode. */
+  silenceMs: number;
 }
 
 /**
@@ -45,6 +49,10 @@ export class LiveTutor {
   private muted = false;
   private ready = false;
   private lastClose = '';
+  /** In tap mode, mic audio is sent only between beginTurn() and endTurn(). */
+  private talking = false;
+  /** Short mic hold after a manual "your turn" nudge, so the stream really ends. */
+  private holdMicUntil = 0;
 
   constructor(private opts: LiveTutorOptions, private ev: LiveTutorEvents) {
     this.model = opts.model;
@@ -101,7 +109,11 @@ export class LiveTutor {
     await this.player.resume();
     await this.connectFirstWorking();
     this.mic = await startMic(
-      (data) => this.session?.sendRealtimeInput({ audio: { data, mimeType: 'audio/pcm;rate=16000' } }),
+      (data) => {
+        if (this.opts.turnMode === 'tap' && !this.talking) return;
+        if (Date.now() < this.holdMicUntil) return;
+        this.session?.sendRealtimeInput({ audio: { data, mimeType: 'audio/pcm;rate=16000' } });
+      },
       (lvl) => this.ev.onMicLevel(lvl),
     );
     this.mic.setMuted(this.muted);
@@ -117,6 +129,19 @@ export class LiveTutor {
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.opts.voice } } },
       inputAudioTranscription: {},
       outputAudioTranscription: {},
+      realtimeInputConfig:
+        this.opts.turnMode === 'tap'
+          ? { automaticActivityDetection: { disabled: true } }
+          : {
+              automaticActivityDetection: {
+                // Low start sensitivity: background noise or the tutor's own echo won't count as you talking.
+                startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
+                // Low end sensitivity + a learner-friendly pause: thinking mid-sentence won't end your turn.
+                endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
+                prefixPaddingMs: 300,
+                silenceDurationMs: this.opts.silenceMs,
+              },
+            },
     };
     const config = this.lean
       ? base
@@ -156,6 +181,9 @@ export class LiveTutor {
     if (sc.interrupted) {
       // Learner barged in — cut the tutor off immediately.
       this.player?.interrupt();
+      this.ev.onState('listening');
+    }
+    if (sc.inputTranscription?.text && this.opts.turnMode === 'auto' && !this.player?.isPlaying()) {
       this.ev.onState('listening');
     }
     if (sc.inputTranscription?.text) {
@@ -212,6 +240,31 @@ export class LiveTutor {
     this.player?.interrupt();
     this.userText = text;
     this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true });
+  }
+
+  /** Tap mode: learner starts talking (also cuts the tutor off). */
+  beginTurn(): void {
+    if (!this.session) return;
+    this.player?.interrupt();
+    this.talking = true;
+    this.session.sendRealtimeInput({ activityStart: {} });
+    this.ev.onState('listening');
+  }
+
+  /** Tap mode: learner finished — the tutor answers right away. */
+  endTurn(): void {
+    if (!this.session || !this.talking) return;
+    this.talking = false;
+    this.session.sendRealtimeInput({ activityEnd: {} });
+    this.ev.onState('thinking');
+  }
+
+  /** Auto mode: "I'm done, your turn" — closes the audio stream so the tutor replies now. */
+  nudge(): void {
+    if (!this.session) return;
+    this.holdMicUntil = Date.now() + 400;
+    this.session.sendRealtimeInput({ audioStreamEnd: true });
+    this.ev.onState('thinking');
   }
 
   /** Silent instruction to the tutor mid-call (e.g. switching explanation language). */

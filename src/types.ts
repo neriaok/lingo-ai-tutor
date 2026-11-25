@@ -3,6 +3,10 @@ export type Level = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 export type CorrectionStyle = 'instant' | 'gentle' | 'none';
 /** 'target': everything in the learned language. 'mixed': explanations in the native language. */
 export type ExplainMode = 'target' | 'mixed';
+/** 'auto': the tutor detects when you finished. 'tap': you tap to talk and tap again when done. */
+export type TurnMode = 'auto' | 'tap';
+/** How long a pause counts as "finished speaking" in auto mode. */
+export type ThinkTime = 'short' | 'normal' | 'long';
 export type Goal = 'conversation' | 'travel' | 'work' | 'exam' | 'school';
 export type Mood = 'happy' | 'thinking' | 'surprised' | 'encouraging';
 export type TutorId = 'maya' | 'leo' | 'noa' | 'sam';
@@ -18,6 +22,8 @@ export interface Profile {
   tutor: TutorId;
   correction: CorrectionStyle;
   explainMode: ExplainMode;
+  turnMode: TurnMode;
+  thinkTime: ThinkTime;
   /** Use the animated video tutor when the tutor has clips. */
   videoAvatar: boolean;
   dailyMinutes: number;

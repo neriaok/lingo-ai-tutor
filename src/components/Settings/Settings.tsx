@@ -6,7 +6,7 @@ import { useStrings } from '../../hooks/useStrings';
 import { updateProfile } from '../../features/profile/profileSlice';
 import { setView } from '../../features/session/sessionSlice';
 import { clearAll } from '../../services/storage';
-import type { CorrectionStyle, LangCode, Profile } from '../../types';
+import type { CorrectionStyle, LangCode, Profile, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import ExplainToggle from '../ExplainToggle';
 import Avatar from '../Avatar';
@@ -134,6 +134,30 @@ const Settings: FC = () => {
         <span className={ui.label}>{s.explainLabel}</span>
         <ExplainToggle value={draft.explainMode} native={draft.native} target={draft.target} label={s.explainLabel} onChange={(explainMode) => patch({ explainMode })} />
       </div>
+
+      <div className={styles.field}>
+        <span className={ui.label}>{s.turnModeLabel}</span>
+        <div className={styles.row}>
+          {([['auto', s.turnAuto], ['tap', s.turnTap]] as [TurnMode, string][]).map(([id, label]) => (
+            <button key={id} type="button" className={clsx(ui.chip, draft.turnMode === id && ui.chipOn)} onClick={() => patch({ turnMode: id })}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {draft.turnMode === 'auto' && (
+        <div className={styles.field}>
+          <span className={ui.label}>{s.thinkTimeLabel}</span>
+          <div className={styles.row}>
+            {([['short', s.thinkShort], ['normal', s.thinkNormal], ['long', s.thinkLong]] as [ThinkTime, string][]).map(([id, label]) => (
+              <button key={id} type="button" className={clsx(ui.chip, draft.thinkTime === id && ui.chipOn)} onClick={() => patch({ thinkTime: id })}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <label className={styles.field}>
         <span className={ui.label}>{s.speechRate} · {draft.speechRate.toFixed(2)}×</span>

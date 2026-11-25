@@ -13,7 +13,7 @@ import { addMessage, setSummary, setView, updateMessage } from '../../features/s
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
 import { buildLiveInstruction, explainRule } from '../../services/tutorPrompt';
 import { stopSpeaking } from '../../services/speech';
-import type { ChatMessage, ExplainMode, Level, NewWord } from '../../types';
+import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import Avatar from '../Avatar';
 import TutorPortrait from '../TutorPortrait';
@@ -27,6 +27,8 @@ import styles from './Call.module.css';
 const uid = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 type Mode = 'voice' | 'text';
+
+const SILENCE_MS: Record<ThinkTime, number> = { short: 700, normal: 1100, long: 1700 };
 
 const Call: FC = () => {
   const dispatch = useAppDispatch();
@@ -51,6 +53,8 @@ const Call: FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [tapTalking, setTapTalking] = useState(false);
+  const [thinkingHint, setThinkingHint] = useState(false);
 
   const tutorRef = useRef<LiveTutor | null>(null);
   const typedRef = useRef(false);
@@ -99,6 +103,8 @@ const Call: FC = () => {
         model: p.liveModel,
         voice: tutorInfo(p.tutor).voice,
         systemInstruction: buildLiveInstruction(p, scenario, memoryRef.current, messagesRef.current),
+        turnMode: p.turnMode,
+        silenceMs: SILENCE_MS[p.thinkTime],
         opener: messagesRef.current.length
           ? '(The learner is back after a short break. Welcome them back in one short sentence and continue the conversation right where it stopped.)'
           : `(${p.name || 'The learner'} just joined the call. Greet them warmly by name and open the activity.)`,
@@ -206,7 +212,7 @@ const Call: FC = () => {
     dispatch(addMessage(msg));
     dispatch(addXp(5));
     const live = tutorRef.current;
-    if (live && (callState === 'listening' || callState === 'speaking')) {
+    if (live && (callState === 'listening' || callState === 'speaking' || callState === 'thinking')) {
       typedRef.current = true;
       live.sendText(text);
     } else {
@@ -220,6 +226,35 @@ const Call: FC = () => {
     const rule = explainRule({ ...profileRef.current, explainMode });
     tutorRef.current?.sendInstruction(`(The learner just changed a setting. ${rule} Apply it from your next sentence on, without commenting on the change.)`);
   };
+
+  const handleTapTalk = (): void => {
+    const t = tutorRef.current;
+    if (!t) return;
+    if (tapTalking) {
+      t.endTurn();
+      setTapTalking(false);
+    } else {
+      t.beginTurn();
+      setTapTalking(true);
+    }
+  };
+
+  const handleNudge = (): void => {
+    tutorRef.current?.nudge();
+    setThinkingHint(true);
+  };
+
+  // Auto mode: once you stop talking and the tutor hasn't started yet, show "thinking" instead of "listening".
+  useEffect(() => {
+    if (!userCaption || profile.turnMode !== 'auto') return undefined;
+    setThinkingHint(false);
+    const timer = window.setTimeout(() => setThinkingHint(true), SILENCE_MS[profile.thinkTime] + 250);
+    return () => window.clearTimeout(timer);
+  }, [userCaption, profile.turnMode, profile.thinkTime]);
+
+  useEffect(() => {
+    if (audioPlaying) setThinkingHint(false);
+  }, [audioPlaying]);
 
   const handleMute = (): void => {
     const next = !muted;
@@ -253,11 +288,22 @@ const Call: FC = () => {
     }
   };
 
-  const live = callState === 'listening' || callState === 'speaking';
+  const live = callState === 'listening' || callState === 'speaking' || callState === 'thinking';
   // The model finishes generating before its audio finishes playing, so trust the speaker.
-  const shownState: CallState = live ? (audioPlaying ? 'speaking' : 'listening') : callState;
+  const shownState: CallState = live
+    ? audioPlaying
+      ? 'speaking'
+      : tapTalking
+        ? 'listening'
+        : callState === 'thinking' || thinkingHint
+          ? 'thinking'
+          : profile.turnMode === 'tap'
+            ? 'idle'
+            : 'listening'
+    : callState;
   const statusLabel: Record<CallState, string> = {
-    idle: s.callConnecting,
+    idle: profile.turnMode === 'tap' && live ? s.tapToSpeak : s.callConnecting,
+    thinking: s.callThinking,
     connecting: s.callConnecting,
     listening: muted ? s.mute : s.callListening,
     speaking: s.callSpeaking,
@@ -342,7 +388,12 @@ const Call: FC = () => {
         {userCaption && (
           <p className={styles.userCaption} dir="auto"><span>{s.youSaid}</span> {userCaption}</p>
         )}
-        {!caption && !userCaption && live && <p className={styles.hint}>{s.tapToTalk}</p>}
+        {!caption && !userCaption && live && <p className={styles.hint}>{profile.turnMode === 'tap' ? s.tapModeHint : s.tapToTalk}</p>}
+        {profile.turnMode === 'auto' && userCaption && !audioPlaying && live && (
+          <button type="button" className={styles.nudge} onClick={handleNudge}>
+            {s.yourTurn}
+          </button>
+        )}
         {captionTurn && (
           <FeedbackCard
             turn={captionTurn}
@@ -368,7 +419,19 @@ const Call: FC = () => {
           <Icon name="chat" />
           <span>{s.openChat}</span>
         </button>
-        {mode === 'voice' && (
+        {mode === 'voice' && profile.turnMode === 'tap' && (
+          <button
+            type="button"
+            className={clsx(styles.ctrl, styles.talk, tapTalking && styles.talkOn)}
+            onClick={handleTapTalk}
+            disabled={!live}
+            aria-pressed={tapTalking}
+          >
+            <Icon name={tapTalking ? 'check' : 'mic'} />
+            <span>{tapTalking ? s.doneTalking : s.tapToSpeak}</span>
+          </button>
+        )}
+        {mode === 'voice' && profile.turnMode === 'auto' && (
           <button type="button" className={clsx(styles.ctrl, muted && styles.ctrlOn)} onClick={handleMute} disabled={!live} aria-pressed={muted}>
             <Icon name={muted ? 'micOff' : 'mic'} />
             <span>{muted ? s.unmute : s.mute}</span>
