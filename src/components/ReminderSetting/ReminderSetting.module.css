@@ -1,0 +1,8 @@
+.wrap { display: grid; gap: 10px; padding: 12px 14px; border: 2px solid var(--line); border-radius: 16px; }
+.row { display: flex; align-items: center; gap: 10px; min-height: 40px; font-weight: 500; }
+.row input { width: 22px; height: 22px; accent-color: var(--pink); }
+.time { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.time span { color: var(--muted); font-size: 14px; }
+.time input { min-height: 44px; padding: 0 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font-size: 16px; }
+.ok { margin: 0; color: var(--teal); font-weight: 700; font-size: 14px; }
+.warn { margin: 0; color: var(--pink); font-size: 14px; }

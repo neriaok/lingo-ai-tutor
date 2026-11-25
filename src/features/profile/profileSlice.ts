@@ -22,6 +22,8 @@ export const defaultProfile: Profile = {
   explainMode: 'target',
   turnMode: 'auto',
   backgroundCall: true,
+  reminderOn: false,
+  reminderTime: '20:00',
   thinkTime: 'normal',
   videoAvatar: true,
   dailyMinutes: 10,

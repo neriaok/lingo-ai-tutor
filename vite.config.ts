@@ -53,6 +53,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Push + notification-click handlers for daily reminders.
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,png,jpg,svg,woff2,mp4}'],
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [

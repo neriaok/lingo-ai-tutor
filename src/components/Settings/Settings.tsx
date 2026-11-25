@@ -12,6 +12,7 @@ import { clearAll } from '../../services/storage';
 import type { CorrectionStyle, LangCode, Profile, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import ExplainToggle from '../ExplainToggle';
+import ReminderSetting from '../ReminderSetting';
 import TutorPortrait from '../TutorPortrait';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
@@ -205,6 +206,8 @@ const Settings: FC = () => {
           onChange={(e) => patch({ speechRate: Number(e.target.value) })}
         />
       </label>
+
+      <ReminderSetting />
 
       {isAndroidApp() ? (
         <label className={styles.toggle}>

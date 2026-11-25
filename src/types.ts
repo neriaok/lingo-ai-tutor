@@ -25,6 +25,10 @@ export interface Profile {
   turnMode: TurnMode;
   /** Keep the call going when the app is in the background, like a real phone call. */
   backgroundCall: boolean;
+  /** Daily practice reminder. */
+  reminderOn: boolean;
+  /** "HH:MM" local time. */
+  reminderTime: string;
   thinkTime: ThinkTime;
   /** Use the animated video tutor when the tutor has clips. */
   videoAvatar: boolean;

@@ -15,6 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "@capacitor/core": "^8.6.2",
+    "@capacitor/local-notifications": "^8.3.1",
     "@google/genai": "^3.6.1",
     "@reduxjs/toolkit": "^2.15.0",
     "clsx": "^2.1.1",
