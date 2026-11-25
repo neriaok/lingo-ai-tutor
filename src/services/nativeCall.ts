@@ -18,7 +18,7 @@ interface CallServicePlugin {
 // Implemented in android/app/src/main/java/com/neriaok/lingo/CallServicePlugin.java
 const CallService = registerPlugin<CallServicePlugin>('CallService');
 
-const isAndroidApp = (): boolean => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('CallService');
+export const isAndroidApp = (): boolean => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('CallService');
 
 /**
  * In the Android app, a foreground service keeps the mic alive while the call runs in the

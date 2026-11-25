@@ -14,7 +14,7 @@ import { addMinutes, addMistake, addXp, saveWord } from '../../features/progress
 import { addMessage, setSummary, setView, updateMessage } from '../../features/session/sessionSlice';
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
 import { buildLiveInstruction } from '../../services/tutorPrompt';
-import { onBackgroundCallAction, startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
+import { isAndroidApp, onBackgroundCallAction, startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
 import { stopSpeaking } from '../../services/speech';
 import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
@@ -167,6 +167,9 @@ const Call: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Browsers suspend the mic of a hidden page, so background calls need the Android app's service.
+  const canRunInBackground = (): boolean => profileRef.current.backgroundCall && isAndroidApp();
+
   // Leaving the app: in background mode the call simply continues (like a phone call);
   // otherwise hang up cleanly and offer to resume (the transcript is saved either way).
   useEffect(() => {
@@ -177,13 +180,13 @@ const Call: FC = () => {
         void t.wake();
         return;
       }
-      if (profileRef.current.backgroundCall) return;
+      if (canRunInBackground()) return;
       tutorRef.current = null;
       void t.stop('paused');
     };
     const handlePageHide = (): void => {
       const t = tutorRef.current;
-      if (!t || profileRef.current.backgroundCall) return;
+      if (!t || canRunInBackground()) return;
       tutorRef.current = null;
       void t.stop('paused');
     };
@@ -356,7 +359,7 @@ const Call: FC = () => {
   useWakeLock(live);
 
   // Android app: a foreground service keeps the mic alive while you use other apps.
-  const backgroundActive = live && mode === 'voice' && profile.backgroundCall;
+  const backgroundActive = live && mode === 'voice' && profile.backgroundCall && isAndroidApp();
   const actionsRef = useRef({ handleMute, handleEnd });
   actionsRef.current = { handleMute, handleEnd };
   useEffect(() => {

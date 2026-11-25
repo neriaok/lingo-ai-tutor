@@ -6,6 +6,7 @@ import { useStrings } from '../../hooks/useStrings';
 import { updateProfile } from '../../features/profile/profileSlice';
 import { setView } from '../../features/session/sessionSlice';
 import { createBackup, restoreBackup } from '../../services/backup';
+import { isAndroidApp } from '../../services/nativeCall';
 import { clearAll } from '../../services/storage';
 import type { CorrectionStyle, LangCode, Profile, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
@@ -14,6 +15,8 @@ import TutorPortrait from '../TutorPortrait';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
 import styles from './Settings.module.css';
+
+const APK_URL = 'https://github.com/neriaok/lingo-ai-tutor/releases/latest/download/Lingo.apk';
 
 const Settings: FC = () => {
   const dispatch = useAppDispatch();
@@ -196,13 +199,21 @@ const Settings: FC = () => {
         />
       </label>
 
-      <label className={styles.toggle}>
-        <input type="checkbox" checked={draft.backgroundCall} onChange={(e) => patch({ backgroundCall: e.target.checked })} />
-        <span>
-          {s.backgroundCall}
-          <small className={styles.toggleHint}>{s.backgroundCallHint}</small>
-        </span>
-      </label>
+      {isAndroidApp() ? (
+        <label className={styles.toggle}>
+          <input type="checkbox" checked={draft.backgroundCall} onChange={(e) => patch({ backgroundCall: e.target.checked })} />
+          <span>
+            {s.backgroundCall}
+            <small className={styles.toggleHint}>{s.backgroundCallHint}</small>
+          </span>
+        </label>
+      ) : (
+        <div className={styles.field}>
+          <span className={ui.label}>{s.backgroundCall}</span>
+          <p className={styles.help}>{s.backgroundWebOnly}</p>
+          <a className={clsx(ui.btn, ui.ghost)} href={APK_URL} target="_blank" rel="noreferrer">{s.getAndroidApp}</a>
+        </div>
+      )}
 
       <label className={styles.toggle}>
         <input type="checkbox" checked={draft.videoAvatar} onChange={(e) => patch({ videoAvatar: e.target.checked })} />
