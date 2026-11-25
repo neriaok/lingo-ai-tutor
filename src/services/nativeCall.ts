@@ -14,6 +14,7 @@ export interface CallNotification {
 interface CallServicePlugin {
   start(options: CallNotification): Promise<{ running: boolean }>;
   stop(): Promise<{ running: boolean }>;
+  ping(): Promise<void>;
   addListener(event: 'action', cb: (e: { action: 'mute' | 'hangup' }) => void): Promise<PluginListenerHandle>;
 }
 
@@ -40,4 +41,10 @@ export const onBackgroundCallAction = (cb: (action: 'mute' | 'hangup') => void):
   if (!isAndroidApp()) return () => undefined;
   const handle = CallService.addListener('action', (e) => cb(e.action));
   return () => void handle.then((h) => h.remove());
+};
+
+/** Heartbeat so the Android service ends itself if the web app stops (call ended, app closed). */
+export const pingBackgroundCall = (): void => {
+  if (!isAndroidApp()) return;
+  void CallService.ping().catch(() => undefined);
 };

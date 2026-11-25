@@ -14,7 +14,9 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Shader;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.Person;
@@ -33,6 +35,21 @@ public class CallService extends Service {
     static final String ACTION_MUTE = "com.neriaok.lingo.MUTE";
     static final String ACTION_HANGUP = "com.neriaok.lingo.HANGUP";
 
+    /** Last heartbeat from the web app; if it stops (call ended, app closed or crashed) the service ends itself. */
+    static volatile long lastPing = 0;
+    private static final long PING_TIMEOUT_MS = 20_000;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable watchdog = new Runnable() {
+        @Override
+        public void run() {
+            if (System.currentTimeMillis() - lastPing > PING_TIMEOUT_MS) {
+                end();
+                return;
+            }
+            handler.postDelayed(this, 5_000);
+        }
+    };
+
     private long startedAt = 0;
     private String avatarFor = null;
     private Bitmap avatar = null;
@@ -45,7 +62,10 @@ public class CallService extends Service {
             return START_NOT_STICKY;
         }
         if (ACTION_HANGUP.equals(action)) {
+            // End it natively right away: the notification disappears and Android stops the
+            // background mic even if the web app takes a moment to react. The web app is told too.
             CallServicePlugin.emit("hangup");
+            end();
             return START_NOT_STICKY;
         }
 
@@ -56,6 +76,9 @@ public class CallService extends Service {
         String muteLabel = extra(intent, muted ? "unmuteLabel" : "muteLabel", muted ? "Unmute" : "Mute");
         String hangupLabel = extra(intent, "hangupLabel", "End");
         if (startedAt == 0) startedAt = System.currentTimeMillis();
+        lastPing = System.currentTimeMillis();
+        handler.removeCallbacks(watchdog);
+        handler.postDelayed(watchdog, 5_000);
 
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
@@ -140,8 +163,19 @@ public class CallService extends Service {
         return v != null ? v : fallback;
     }
 
+    private void end() {
+        handler.removeCallbacks(watchdog);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
+        stopSelf();
+    }
+
     @Override
     public void onDestroy() {
+        handler.removeCallbacks(watchdog);
         startedAt = 0;
         super.onDestroy();
     }

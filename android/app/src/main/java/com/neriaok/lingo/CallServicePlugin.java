@@ -17,6 +17,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 /**
  * JS bridge for the call service:
  *   CallService.start({ title, text, tutor, muted, muteLabel, unmuteLabel, hangupLabel })  (call again to update)
+ *   CallService.ping()   // heartbeat every few seconds; without it the service ends itself
  *   CallService.stop()
  *   CallService.addListener('action', ({ action }) => ...)   // 'mute' | 'hangup' from the notification
  */
@@ -60,6 +61,13 @@ public class CallServicePlugin extends Plugin {
         } catch (Exception e) {
             call.reject("Could not start call service: " + e.getMessage());
         }
+    }
+
+    /** Heartbeat from the web app while the call is live (see CallService watchdog). */
+    @PluginMethod
+    public void ping(PluginCall call) {
+        CallService.lastPing = System.currentTimeMillis();
+        call.resolve();
     }
 
     @PluginMethod
