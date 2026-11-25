@@ -59,6 +59,7 @@ const Call: FC = () => {
   const [tapTalking, setTapTalking] = useState(false);
   const [thinkingHint, setThinkingHint] = useState(false);
   const [song, setSong] = useState<{ query: string; why: string } | null>(null);
+  const [switchingMode, setSwitchingMode] = useState(false);
 
   const tutorRef = useRef<LiveTutor | null>(null);
   const typedRef = useRef(false);
@@ -97,7 +98,7 @@ const Call: FC = () => {
   );
 
   // ---------- Voice call ----------
-  const startCall = useCallback(async (openerOverride?: string) => {
+  const startCall = useCallback(async (openerOverride?: string, modeJustChanged = false) => {
     if (!profileRef.current.apiKey) return;
     setNotice(null);
     const p = profileRef.current;
@@ -106,7 +107,7 @@ const Call: FC = () => {
         apiKey: p.apiKey,
         model: p.liveModel,
         voice: tutorInfo(p.tutor).voice,
-        systemInstruction: buildLiveInstruction(p, scenario, memoryRef.current, messagesRef.current),
+        systemInstruction: buildLiveInstruction(p, scenario, memoryRef.current, messagesRef.current, modeJustChanged),
         turnMode: p.turnMode,
         silenceMs: SILENCE_MS[p.thinkTime],
         languageCodes: [langInfo(p.target).speech, langInfo(p.native).speech],
@@ -247,19 +248,27 @@ const Call: FC = () => {
 
   /** The explanation language lives in the system instruction, so switching reconnects with the transcript. */
   const handleExplainMode = async (explainMode: ExplainMode): Promise<void> => {
-    if (explainMode === profileRef.current.explainMode) return;
+    if (explainMode === profileRef.current.explainMode || switchingMode) return;
+    setSwitchingMode(true);
     dispatch(updateProfile({ explainMode }));
     profileRef.current = { ...profileRef.current, explainMode };
     const t = tutorRef.current;
-    if (!t) return;
+    if (!t) {
+      setSwitchingMode(false);
+      return;
+    }
     tutorRef.current = null;
     setTapTalking(false);
     await t.stop('connecting');
+    const native = langInfo(profileRef.current.native).name;
+    const target = langInfo(profileRef.current.target).name;
     await startCall(
       explainMode === 'mixed'
-        ? '(Same call, just reconnected. Do not greet again. From now on explain in the learner\'s native language as instructed — start by briefly explaining your last message in it, then continue.)'
-        : '(Same call, just reconnected. Do not greet again. From now on speak only the target language. Continue naturally from the last message.)',
+        ? `(The learner switched ON ${native} explanations. Do not greet again. Start right away by explaining your last message briefly in ${native} — what it meant and any useful word in it — then ask your question again in ${target}. Keep explaining in ${native} like this from now on.)`
+        : `(The learner switched to ${target} ONLY. Do not greet again and do not speak ${native} at all from now on — not even for explanations. Briefly repeat your last question in simple ${target} and continue.)`,
+      true,
     );
+    setSwitchingMode(false);
   };
 
   /** Switching turn mode needs a new Live session; the transcript carries the conversation over. */
@@ -458,6 +467,7 @@ const Call: FC = () => {
           target={profile.target}
           label={s.explainLabel}
           onChange={(m) => void handleExplainMode(m)}
+          disabled={switchingMode}
         />
       </div>
 

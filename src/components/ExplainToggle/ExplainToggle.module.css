@@ -20,3 +20,7 @@
   transition: background 0.15s;
 }
 .on { background: #1b1b1f; color: #fff; font-weight: 700; }
+.busy { opacity: 0.6; }
+.busy .on { animation: pulse 0.9s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .busy .on { animation: none; } }

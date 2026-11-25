@@ -26,6 +26,16 @@ describe('tutor prompts', () => {
     tutor.styleNotes.forEach((note) => expect(text).toContain(note));
   });
 
+  it('puts the language mode last and flags a mid-call switch', () => {
+    const text = buildLiveInstruction({ ...defaultProfile, explainMode: 'mixed' }, scenario, undefined, [
+      { id: '1', role: 'tutor', text: 'What did you do today?', via: 'voice' },
+    ], true);
+    const modeAt = text.lastIndexOf('CURRENT LANGUAGE MODE');
+    expect(modeAt).toBeGreaterThan(text.indexOf('THIS CALL SO FAR'));
+    expect(text.slice(modeAt)).toContain('BILINGUAL');
+    expect(text).toContain('has just changed the explanation language');
+  });
+
   it('includes memory from past calls and the transcript when resuming', () => {
     const text = buildLiveInstruction(defaultProfile, scenario, { words: ['awesome'], mistakes: [], recaps: ['Neria has a job interview on Sunday.'] }, [
       { id: '1', role: 'user', text: 'I like football', via: 'voice' },

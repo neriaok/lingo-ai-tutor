@@ -9,11 +9,12 @@ interface ExplainToggleProps {
   native: LangCode;
   target: LangCode;
   label: string;
+  disabled?: boolean;
   onChange: (mode: ExplainMode) => void;
 }
 
 /** Two-way switch: everything in the target language, or explanations in the native one. */
-const ExplainToggle: FC<ExplainToggleProps> = ({ value, native, target, label, onChange }) => {
+const ExplainToggle: FC<ExplainToggleProps> = ({ value, native, target, label, disabled = false, onChange }) => {
   const isHe = native === 'he';
   const t = langInfo(target);
   const n = langInfo(native);
@@ -23,13 +24,14 @@ const ExplainToggle: FC<ExplainToggleProps> = ({ value, native, target, label, o
   ];
 
   return (
-    <div className={styles.toggle} role="radiogroup" aria-label={label}>
+    <div className={clsx(styles.toggle, disabled && styles.busy)} role="radiogroup" aria-label={label} aria-busy={disabled}>
       {options.map((o) => (
         <button
           key={o.id}
           type="button"
           role="radio"
           aria-checked={value === o.id}
+          disabled={disabled}
           className={clsx(styles.option, value === o.id && styles.on)}
           onClick={() => value !== o.id && onChange(o.id)}
         >

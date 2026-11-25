@@ -70,7 +70,13 @@ Overall, ${NATIVE_SHARE[profile.level]} of what you say should be in ${native}. 
 };
 
 /** System instruction for the real-time voice call (Gemini Live). */
-export const buildLiveInstruction = (profile: Profile, scenario: Scenario, memory?: LearnerMemory, transcript: ChatMessage[] = []): string => {
+export const buildLiveInstruction = (
+  profile: Profile,
+  scenario: Scenario,
+  memory?: LearnerMemory,
+  transcript: ChatMessage[] = [],
+  modeJustChanged = false,
+): string => {
   const tutor = tutorInfo(profile.tutor);
   const target = langInfo(profile.target).name;
   const corr =
@@ -95,7 +101,6 @@ HOW TO SOUND HUMAN
 - Share small opinions and stories of your own so it feels two-sided; then hand the turn back with a question.
 - Never use lists, markdown, emojis or say things like "as an AI". Never describe what you are doing.
 - ${profile.explainMode === 'mixed' ? `The conversation is in ${target} (with ${langInfo(profile.native).name} explanations as described below).` : `Speak ${target}.`} ${spokenLevelRule(profile.level)}
-- ${explainRule(profile)}
 - ${corr} The app shows written corrections on screen, so keep the flow going.
 - If the learner interrupts you, stop and respond to what they said.
 - Pronunciation: if a word was clearly mispronounced, naturally repeat it correctly in your reply (stress the word slightly). Only occasionally, briefly ask them to try it again — never more than once per word.
@@ -106,9 +111,16 @@ HOW TO SOUND HUMAN
       ? `\n\nTHIS CALL SO FAR (it was interrupted; continue from here)\n${transcript
           .slice(-20)
           .map((m) => `${m.role === 'user' ? 'LEARNER' : 'YOU'}: ${m.text}`)
-          .join('\n')}`
+          .join('\n')}${
+          modeJustChanged
+            ? '\n(The learner has just changed the explanation language. Earlier turns followed the old mode — ignore that pattern and follow the CURRENT LANGUAGE MODE below from your very next sentence.)'
+            : ''
+        }`
       : ''
-  }`;
+  }
+
+CURRENT LANGUAGE MODE (this overrides anything earlier in this prompt or in the conversation)
+${explainRule(profile)}`;
 };
 
 /** Written feedback for one voice exchange — shown as cards under the captions. */
@@ -159,6 +171,8 @@ RULES
 - Stay friendly and safe; if the learner goes off-topic, follow them — conversation is the goal.${memoryLines(memory)}
 
 ${transcript ? `CONVERSATION SO FAR\n${transcript}\n` : 'The conversation has not started. Greet the learner by name and open the activity.\n'}
+CURRENT LANGUAGE MODE (overrides earlier turns): ${profile.explainMode === 'mixed' ? `explain in ${native} as described above` : `${target} only — no ${native} in "reply"`}.
+
 Answer with ONLY one JSON object, no prose, no code fences:
 {"reply":"...","translation":"...","correction":{"original":"...","corrected":"...","explanation":"..."} or null,"newWords":[{"word":"...","meaning":"...","example":"..."}],"suggestions":["..."],"mood":"happy","assessedLevel":null}`;
 };
