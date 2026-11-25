@@ -60,7 +60,6 @@ export const explainRule = (profile: Profile): string => {
 /** System instruction for the real-time voice call (Gemini Live). */
 export const buildLiveInstruction = (profile: Profile, scenario: Scenario, memory?: LearnerMemory, transcript: ChatMessage[] = []): string => {
   const tutor = tutorInfo(profile.tutor);
-  const native = langInfo(profile.native).name;
   const target = langInfo(profile.target).name;
   const corr =
     profile.correction === 'none'
@@ -70,6 +69,8 @@ export const buildLiveInstruction = (profile: Profile, scenario: Scenario, memor
         : 'Only recast mistakes that would confuse a native speaker; let small slips go.';
 
   return `You are ${tutor.name}, a real person having a live voice call with a learner of ${target}. Personality: ${tutor.persona}.
+YOUR STYLE (stay in character the whole call):
+${tutor.styleNotes.map((n) => `- ${n}`).join('\n')}
 ${learnerLine(profile)}
 Activity: ${scenario.brief}
 
@@ -81,6 +82,8 @@ HOW TO SOUND HUMAN
 - ${explainRule(profile)}
 - ${corr} The app shows written corrections on screen, so keep the flow going.
 - If the learner interrupts you, stop and respond to what they said.
+- Pronunciation: if a word was clearly mispronounced, naturally repeat it correctly in your reply (stress the word slightly). Only occasionally, briefly ask them to try it again — never more than once per word.
+- If you didn't catch what they said, ask them to repeat like a real person would ("Sorry, say that again?").
 - Weave in their interests naturally. Keep it warm, safe and encouraging.${memoryLines(memory)}${
     transcript.length
       ? `\n\nTHIS CALL SO FAR (it was interrupted; continue from here)\n${transcript
@@ -120,6 +123,7 @@ export const buildTutorPrompt = (profile: Profile, scenario: Scenario, history: 
     .join('\n');
 
   return `You are ${tutor.name}, a ${target} conversation tutor inside a language-learning app. Personality: ${tutor.persona}.
+Your style: ${tutor.styleNotes.join(' ')}
 Learner: ${profile.name || 'the learner'}; native language ${native}; learning ${target}; CEFR level ${profile.level}; goal: ${goal}; interests: ${interests || 'general'}.
 Activity: ${scenario.brief}
 
