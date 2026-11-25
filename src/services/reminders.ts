@@ -6,7 +6,7 @@ import { isAndroidApp } from './nativeCall';
 // - Web / iPhone home-screen app: Web Push from the lingo-push Cloudflare Worker (see /worker).
 
 export const VAPID_PUBLIC_KEY = 'BDsqhgTMERc5lOP-hoX1Jkj2CKio3zHNyqxEe3mJIokC0blq24r53vG_AqC4reUvZUJu2YcOx2cKjkDBP9Q_PG8';
-export const PUSH_URL: string = (import.meta.env.VITE_PUSH_URL as string | undefined) ?? '';
+export const PUSH_URL: string = (import.meta.env.VITE_PUSH_URL as string | undefined) ?? 'https://lingo-push.neriaokabik.workers.dev';
 
 const LOCAL_ID = 1001;
 
