@@ -180,7 +180,10 @@ const Call: FC = () => {
         void t.wake();
         return;
       }
-      if (canRunInBackground()) return;
+      if (canRunInBackground()) {
+        t.setBackground(true);
+        return;
+      }
       tutorRef.current = null;
       void t.stop('paused');
     };

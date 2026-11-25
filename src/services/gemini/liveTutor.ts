@@ -75,6 +75,11 @@ export class LiveTutor {
   private talking = false;
   /** Short mic hold after a manual "your turn" nudge, so the stream really ends. */
   private holdMicUntil = 0;
+  /**
+   * While the app is in the background the phone's echo cancellation is less reliable, so the
+   * mic is held back while the tutor is speaking — otherwise it hears (and imitates) its own voice.
+   */
+  private echoGuard = false;
 
   constructor(private opts: LiveTutorOptions, private ev: LiveTutorEvents) {
     this.model = opts.model;
@@ -134,6 +139,7 @@ export class LiveTutor {
       (data) => {
         if (this.opts.turnMode === 'tap' && !this.talking) return;
         if (Date.now() < this.holdMicUntil) return;
+        if (this.echoGuard && this.player?.isPlaying()) return;
         this.session?.sendRealtimeInput({ audio: { data, mimeType: 'audio/pcm;rate=16000' } });
       },
       (lvl) => this.ev.onMicLevel(lvl),
@@ -300,8 +306,13 @@ export class LiveTutor {
     this.ev.onState('thinking');
   }
 
+  setBackground(background: boolean): void {
+    this.echoGuard = background;
+  }
+
   /** Called when the app returns to the foreground: resume audio the OS may have suspended. */
   async wake(): Promise<void> {
+    this.echoGuard = false;
     await this.player?.resume().catch(() => undefined);
     await this.mic?.resume();
   }
