@@ -1,8 +1,9 @@
 import type { FC } from 'react';
 import clsx from 'clsx';
-import { langInfo } from '../../data/catalog';
+import { LEVELS, langInfo, levelIndex } from '../../data/catalog';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { useStrings } from '../../hooks/useStrings';
+import { updateProfile } from '../../features/profile/profileSlice';
 import { setView, startSession } from '../../features/session/sessionSlice';
 import TutorPortrait from '../TutorPortrait';
 import Icon from '../Icon';
@@ -13,7 +14,13 @@ const Summary: FC = () => {
   const dispatch = useAppDispatch();
   const s = useStrings();
   const { summary, scenarioId } = useAppSelector((st) => st.session);
-  const { tutor, target } = useAppSelector((st) => st.profile.data);
+  const { tutor, target, level } = useAppSelector((st) => st.profile.data);
+  const sessions = useAppSelector((st) => st.history.sessions);
+  // Suggest moving up after three strong conversations in a row at the current level.
+  const recent = sessions.filter((x) => x.summary && x.target === target && x.level === level).slice(0, 3);
+  const nextLevel = LEVELS[levelIndex(level) + 1]?.id;
+  const readyToLevelUp =
+    !!nextLevel && recent.length === 3 && recent.every((x) => (x.summary?.score ?? 0) >= 85);
   const tDir = langInfo(target).rtl ? 'rtl' : 'ltr';
   if (!summary) return null;
 
@@ -29,6 +36,16 @@ const Summary: FC = () => {
         <p>{summary.headline}</p>
         <span className={styles.xp}><Icon name="star" size={18} /> +{summary.xp} {s.xp}</span>
       </section>
+
+      {readyToLevelUp && nextLevel && (
+        <section className={clsx(styles.block, styles.levelUp)}>
+          <h2>{s.levelUpTitle}</h2>
+          <p>{s.levelUpBody}</p>
+          <button type="button" className={clsx(ui.btn, ui.pink)} onClick={() => dispatch(updateProfile({ level: nextLevel }))}>
+            {s.levelUpBtn}{nextLevel}
+          </button>
+        </section>
+      )}
 
       {summary.strengths.length > 0 && (
         <section className={clsx(ui.card, styles.block)}>

@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { useStrings } from '../../hooks/useStrings';
 import { updateProfile } from '../../features/profile/profileSlice';
 import { setView } from '../../features/session/sessionSlice';
+import { createBackup, restoreBackup } from '../../services/backup';
 import { clearAll } from '../../services/storage';
 import type { CorrectionStyle, LangCode, Profile, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
@@ -20,6 +21,9 @@ const Settings: FC = () => {
   const profile = useAppSelector((st) => st.profile.data);
   const [draft, setDraft] = useState<Profile>(profile);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoreText, setRestoreText] = useState('');
   const isHe = profile.native === 'he';
 
   const patch = (p: Partial<Profile>): void => setDraft((d) => ({ ...d, ...p }));
@@ -33,6 +37,26 @@ const Settings: FC = () => {
   const handleSave = (): void => {
     dispatch(updateProfile(draft));
     dispatch(setView('home'));
+  };
+
+  const handleCopyBackup = async (): Promise<void> => {
+    const text = createBackup();
+    try {
+      await navigator.clipboard.writeText(text);
+      setBackupMsg(s.backupCopied);
+    } catch {
+      setRestoreOpen(true);
+      setRestoreText(text);
+      setBackupMsg(s.backupManual);
+    }
+  };
+
+  const handleRestore = (): void => {
+    if (restoreBackup(restoreText)) {
+      window.location.reload();
+    } else {
+      setBackupMsg(s.backupInvalid);
+    }
   };
 
   const handleReset = (): void => {
@@ -193,6 +217,29 @@ const Settings: FC = () => {
           <input className={styles.input} dir="ltr" value={draft.textModel} onChange={(e) => patch({ textModel: e.target.value.trim() })} />
         </label>
       </details>
+
+      <div className={styles.field}>
+        <span className={ui.label}>{s.backupTitle}</span>
+        <p className={styles.help}>{s.backupHelp}</p>
+        <div className={styles.row}>
+          <button type="button" className={clsx(ui.btn, ui.ghost)} onClick={() => void handleCopyBackup()}>{s.backupCopy}</button>
+          <button type="button" className={clsx(ui.btn, ui.ghost)} onClick={() => setRestoreOpen((v) => !v)}>{s.backupRestore}</button>
+        </div>
+        {restoreOpen && (
+          <>
+            <textarea
+              className={styles.backupBox}
+              dir="ltr"
+              rows={4}
+              value={restoreText}
+              placeholder={s.backupPaste}
+              onChange={(e) => setRestoreText(e.target.value)}
+            />
+            <button type="button" className={ui.btn} disabled={!restoreText.trim()} onClick={handleRestore}>{s.backupRestoreNow}</button>
+          </>
+        )}
+        {backupMsg && <p className={styles.help}>{backupMsg}</p>}
+      </div>
 
       <div className={styles.actions}>
         <button type="button" className={clsx(ui.btn, ui.pink)} onClick={handleSave}>{s.save}</button>
