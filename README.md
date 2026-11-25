@@ -30,7 +30,7 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 
 **Conversation**
 - 🎙️ **Real-time voice call** via the Gemini Live API (native audio, speech-to-speech, barge-in).
-- 🧑‍🏫 **Four tutors**, each with a personality and voice. Tutors with video clips (rendered with Gemini / Veo) cross-fade between idle, listening, talking and thinking loops that follow the live call. The drawn SVG tutors drive their mouth from the **actual amplitude** of the audio.
+- 🧑‍🏫 **Four tutors with real personalities**: Maya is warm and patient, Noa is a sharp, probing interviewer, Leo is a friendly, down-to-earth guy, and Sam is the funny one with jokes and puns. Each has their own voice. Tutors with video clips (rendered with Gemini / Veo) cross-fade from an idle loop into a talking loop only while the tutor’s voice is audible. The drawn SVG tutors drive their mouth from the **actual amplitude** of the audio.
 - 💬 **Optional chat panel**: type during a call and the tutor answers by voice. If the mic is unavailable, the app falls back to a full text chat.
 - 📝 **Live captions** for both sides, with a one-tap translation into your native language.
 - 🔀 **Explanation language switch**, available inside the call: everything in the target language, or keep the conversation in it while the tutor explains grammar and meanings in your native language.
@@ -44,6 +44,9 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 - 📚 **Spaced-repetition vocabulary** (Leitner boxes). Save any new word from a call with one tap.
 - 🗂️ **Mistakes notebook** that tracks repeated errors.
 - 🧠 **Tutor memory**: a short recap of what you shared in recent calls, plus your saved words and open mistakes, go into the next call's instructions, so the tutor brings them up again naturally. There's also a dedicated *Practise my words* call.
+- 💾 **Backup & restore** of words, mistakes, progress and conversations as copy-paste text (the API key is never included).
+- 📈 **Level-up suggestions** after three strong conversations in a row.
+- 🗣️ **Pronunciation help**: the tutor naturally repeats words you mispronounced.
 - 📊 **Lesson summary** with a score, strengths, top mistakes and one concrete tip. XP, streaks and a daily minutes goal track progress.
 
 **Platform**
@@ -99,7 +102,9 @@ src/
 ```bash
 npm install
 npm run dev          # http://localhost:5173
+npm run lint         # ESLint (typescript-eslint + react-hooks)
 npm run typecheck
+npm test             # Vitest: SRS, mistakes, prompts/personalities, backup
 npm run build        # dist/ (PWA)
 npm run android:sync # build + copy into the Android project
 ```
@@ -108,7 +113,8 @@ npm run android:sync # build + copy into the Android project
 
 | Workflow | Trigger | Output |
 |---|---|---|
-| `deploy-web.yml` | push to `main` | Type-checks, builds and deploys to GitHub Pages |
+| `ci.yml` | pull request | Lint, type-check, unit tests and build |
+| `deploy-web.yml` | push to `main` | Lint, type-check, tests, then build and deploy to GitHub Pages |
 | `android.yml` | push to `main` | Builds a signed release APK and publishes it as a GitHub Release (`Lingo.apk`) |
 
 APK signing uses four repository secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Without them, CI falls back to a debug key.
