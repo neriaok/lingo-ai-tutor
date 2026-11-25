@@ -16,7 +16,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 /**
  * JS bridge for the call service:
- *   CallService.start({ title, text, muted, muteLabel, unmuteLabel, hangupLabel })  (call again to update)
+ *   CallService.start({ title, text, tutor, muted, muteLabel, unmuteLabel, hangupLabel })  (call again to update)
  *   CallService.stop()
  *   CallService.addListener('action', ({ action }) => ...)   // 'mute' | 'hangup' from the notification
  */
@@ -49,6 +49,7 @@ public class CallServicePlugin extends Plugin {
         Intent intent = new Intent(getContext(), CallService.class);
         intent.putExtra("title", call.getString("title", "Lingo"));
         intent.putExtra("text", call.getString("text", ""));
+        intent.putExtra("tutor", call.getString("tutor", "maya"));
         intent.putExtra("muted", Boolean.TRUE.equals(call.getBoolean("muted", false)));
         intent.putExtra("muteLabel", call.getString("muteLabel", "Mute"));
         intent.putExtra("unmuteLabel", call.getString("unmuteLabel", "Unmute"));

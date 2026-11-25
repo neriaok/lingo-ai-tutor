@@ -3,6 +3,8 @@ import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor
 export interface CallNotification {
   title: string;
   text: string;
+  /** Tutor id — the notification shows their portrait. */
+  tutor: string;
   muted: boolean;
   muteLabel: string;
   unmuteLabel: string;

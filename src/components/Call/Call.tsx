@@ -372,14 +372,15 @@ const Call: FC = () => {
   useEffect(() => {
     if (!backgroundActive) return;
     void startBackgroundCall({
-      title: `${tutor.name} · Lingo`,
+      title: tutor.name,
       text: muted ? s.mute : s.backgroundNotice,
+      tutor: tutor.id,
       muted,
       muteLabel: s.mute,
       unmuteLabel: s.unmute,
       hangupLabel: s.endCall,
     });
-  }, [backgroundActive, muted, tutor.name, s]);
+  }, [backgroundActive, muted, tutor.name, tutor.id, s]);
   useEffect(() => {
     if (!backgroundActive) return undefined;
     return () => void stopBackgroundCall();
