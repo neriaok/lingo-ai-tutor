@@ -56,6 +56,8 @@ export interface TutorTurn {
   suggestions: string[];
   mood: Mood;
   assessedLevel?: Level | null;
+  /** A song the learner asked for (or the tutor suggested), shown as an "open on YouTube" card. */
+  song?: { query: string; why: string } | null;
 }
 
 export interface ChatMessage {

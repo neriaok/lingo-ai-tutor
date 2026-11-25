@@ -89,6 +89,8 @@ const Call: FC = () => {
       const res = await feedback({ profile: profileRef.current, learner, tutor: tutorText });
       if ('data' in res && res.data) {
         dispatch(updateMessage({ id: messageId, patch: { turn: res.data, pending: false } }));
+        // Backup for the song tool: the feedback model also spots song requests.
+        if (res.data.song) setSong(res.data.song);
         if (res.data.correction) dispatch(addMistake({ correction: res.data.correction, lang: profileRef.current.target }));
       } else {
         dispatch(updateMessage({ id: messageId, patch: { pending: false } }));
@@ -217,6 +219,7 @@ const Call: FC = () => {
       const res = await chatTurn({ profile: profileRef.current, scenario, history, memory: memoryRef.current });
       if ('data' in res && res.data) {
         dispatch(addMessage({ id: uid(), role: 'tutor', text: res.data.reply, via: 'text', turn: res.data }));
+        if (res.data.song) setSong(res.data.song);
         if (res.data.correction) dispatch(addMistake({ correction: res.data.correction, lang: profileRef.current.target }));
         if (profileRef.current.autoSpeak) say(res.data.reply);
       } else {

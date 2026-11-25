@@ -40,6 +40,11 @@ const normalizeTurn = (raw: unknown): TutorTurn => {
     suggestions: arr(o.suggestions).map(str).filter(Boolean).slice(0, 3),
     mood,
     assessedLevel: assessed,
+    song: (() => {
+      const sg = (o.song ?? null) as Record<string, unknown> | null;
+      const query = sg && typeof sg === 'object' ? str(sg.query).trim() : '';
+      return query ? { query: query.slice(0, 120), why: str(sg?.why).slice(0, 160) } : null;
+    })(),
   };
 };
 
