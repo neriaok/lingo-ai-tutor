@@ -328,7 +328,10 @@ const Call: FC = () => {
   }
 
   return (
-    <div className={styles.wrap}>
+    <div
+      className={styles.wrap}
+      style={profile.videoAvatar && tutor.videoBg ? { ['--stage' as string]: tutor.videoBg } : undefined}
+    >
       <header className={styles.header}>
         <button type="button" className={styles.topBtn} aria-label={s.back} onClick={() => void handleEnd()}>
           <span className={styles.flip}><Icon name="back" /></span>

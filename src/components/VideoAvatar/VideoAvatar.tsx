@@ -63,6 +63,16 @@ const VideoAvatar: FC<VideoAvatarProps> = ({ tutor, mode, className, onFail }) =
   }, [mode]);
 
   const lipsync = mode === 'lipsync';
+  // Tutors without an idle clip show their resting still outside calls.
+  const stillOnly = !lipsync && !(t.clips ?? []).includes('idle');
+
+  if (stillOnly) {
+    return (
+      <div className={clsx(styles.frame, styles.still, className)} style={{ ['--avatar-bg' as string]: t.videoBg ?? 'var(--sun)' }}>
+        <img className={styles.rest} style={{ opacity: 1 }} src={`./avatars/${t.id}-talk-poster.jpg`} alt={t.name} onError={onFail} />
+      </div>
+    );
+  }
 
   return (
     <div

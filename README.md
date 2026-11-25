@@ -18,6 +18,7 @@
 <p align="center">
   <img src="docs/screenshots/call.png" width="220" alt="Live voice call with the tutor" />
   <img src="docs/screenshots/chat.png" width="220" alt="Optional chat panel" />
+  <img src="docs/screenshots/tutors.png" width="220" alt="Choose your tutor" />
   <img src="docs/screenshots/summary.png" width="220" alt="Lesson summary" />
 </p>
 

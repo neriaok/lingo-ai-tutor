@@ -8,7 +8,7 @@ import { startSession } from '../../features/session/sessionSlice';
 import type { CorrectionStyle, LangCode, Profile } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import ExplainToggle from '../ExplainToggle';
-import Avatar from '../Avatar';
+import TutorPortrait from '../TutorPortrait';
 import ui from '../ui.module.css';
 import styles from './Onboarding.module.css';
 
@@ -52,7 +52,7 @@ const Onboarding: FC = () => {
       {step === 0 && (
         <section className={styles.hero}>
           <div className={styles.stamp}>
-            <Avatar tutor="maya" size={210} />
+            <TutorPortrait tutor="maya" size={210} className={styles.heroPic} />
           </div>
           <h1 className={styles.brand}>{s.appName}</h1>
           <p className={styles.lead}>{s.tagline}</p>
@@ -178,7 +178,7 @@ const Onboarding: FC = () => {
           <div className={styles.tutors}>
             {TUTORS.map((t) => (
               <button key={t.id} type="button" className={clsx(styles.tutor, draft.tutor === t.id && styles.bigOn)} onClick={() => patch({ tutor: t.id })}>
-                <Avatar tutor={t.id} size={110} mood={draft.tutor === t.id ? 'encouraging' : 'happy'} />
+                <TutorPortrait tutor={t.id} size={110} mood={draft.tutor === t.id ? 'encouraging' : 'happy'} className={styles.pick} />
                 <strong>{t.name}</strong>
                 <small>{isHe ? t.he : t.en}</small>
               </button>
@@ -190,7 +190,7 @@ const Onboarding: FC = () => {
       {step === 6 && (
         <section className={styles.step}>
           <div className={styles.stampSmall}>
-            <Avatar tutor={draft.tutor} size={150} mood="encouraging" />
+            <TutorPortrait tutor={draft.tutor} size={150} mood="encouraging" className={styles.pickBig} />
           </div>
           <h2>{s.stepName}</h2>
           <input

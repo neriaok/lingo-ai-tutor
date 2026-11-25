@@ -95,3 +95,6 @@
 }
 .grow { flex: 1; }
 .explain { color: var(--ink); }
+.pick { width: 110px; margin-bottom: 6px; }
+.pickBig { width: 160px; }
+.heroPic { width: 200px; }

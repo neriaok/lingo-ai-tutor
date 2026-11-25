@@ -5,7 +5,7 @@
   height: 100dvh;
   max-width: 640px;
   margin: 0 auto;
-  background: var(--sun);
+  background: var(--stage, var(--sun));
   color: #1b1b1f;
   overflow: hidden;
 }

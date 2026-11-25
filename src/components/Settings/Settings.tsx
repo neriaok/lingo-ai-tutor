@@ -9,7 +9,7 @@ import { clearAll } from '../../services/storage';
 import type { CorrectionStyle, LangCode, Profile, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import ExplainToggle from '../ExplainToggle';
-import Avatar from '../Avatar';
+import TutorPortrait from '../TutorPortrait';
 import Icon from '../Icon';
 import ui from '../ui.module.css';
 import styles from './Settings.module.css';
@@ -112,7 +112,7 @@ const Settings: FC = () => {
         <div className={styles.tutors}>
           {TUTORS.map((t) => (
             <button key={t.id} type="button" className={clsx(styles.tutor, draft.tutor === t.id && styles.tutorOn)} onClick={() => patch({ tutor: t.id })}>
-              <Avatar tutor={t.id} size={64} />
+              <TutorPortrait tutor={t.id} size={64} className={styles.pick} />
               <span>{t.name}</span>
             </button>
           ))}
