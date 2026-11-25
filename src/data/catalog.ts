@@ -86,7 +86,7 @@ export interface TutorInfo {
   shirt: string;
   style: 'bob' | 'short' | 'curly' | 'bun';
   glasses: boolean;
-  /** Animated clips available in public/avatars (Gemini/Veo renders). */
+  /** Animated clips in public/avatars (Gemini/Veo renders), cropped to the same face position. */
   clips?: ('idle' | 'talk')[];
   /** Background colour of those clips, used for the stage behind them. */
   videoBg?: string;

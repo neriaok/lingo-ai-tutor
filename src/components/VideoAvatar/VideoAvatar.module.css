@@ -5,24 +5,22 @@
   border-radius: 32px;
   overflow: hidden;
   background: var(--avatar-bg);
-  /* Soft edges so the clip melts into the stage colour. */
+  isolation: isolate;
+  /* Soft edges so the clips melt into the stage colour. */
   -webkit-mask-image: radial-gradient(ellipse 72% 70% at 50% 45%, #000 78%, transparent 100%);
   mask-image: radial-gradient(ellipse 72% 70% at 50% 45%, #000 78%, transparent 100%);
 }
-.clip, .rest {
+.clip {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform-origin: 50% 85%;
 }
-.rest { opacity: 0; transition: opacity 0.18s ease-out; pointer-events: none; }
-.restOn { opacity: 1; transition-duration: 0.15s; }
-/* While the video is paused (tutor silent) keep her alive with a slow, tiny breath. */
-.still .clip, .still .rest { animation: breathe 3.6s ease-in-out infinite; }
-@keyframes breathe {
-  0%, 100% { transform: scale(1) translateY(0); }
-  50% { transform: scale(1.012) translateY(-1px); }
+.talk {
+  opacity: 0;
+  transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
 }
-@media (prefers-reduced-motion: reduce) { .still .clip, .still .rest { animation: none; } }
+.talkOn { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .talk { transition-duration: 0.12s; } }

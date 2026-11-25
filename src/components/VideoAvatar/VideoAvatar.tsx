@@ -7,93 +7,93 @@ import styles from './VideoAvatar.module.css';
 
 interface VideoAvatarProps {
   tutor: TutorId;
-  /** 'loop': gentle idle clip. 'lipsync': the talking clip plays only while the tutor's voice is audible. */
+  /** 'loop': idle clip only. 'lipsync': idle clip, cross-fading into the talking clip while the voice is audible. */
   mode: 'loop' | 'lipsync';
   className?: string;
   onFail?: () => void;
 }
 
 const VOICE_THRESHOLD = 0.06;
-// Quiet this long = the tutor stopped talking (ignores tiny gaps between syllables).
-const SILENCE_MS = 180;
+// Quiet this long = the tutor stopped talking (ignores the small gaps between words).
+const SILENCE_MS = 260;
+// Once the talking clip is shown, keep it at least this long, so short blips never flicker.
+const MIN_TALK_MS = 600;
+// Must match the CSS cross-fade duration.
+const FADE_MS = 320;
 
 /**
- * Video tutor. In lipsync mode one talking clip plays while the voice is audible.
- * When the tutor is silent we fade to a still of the clip's first frame (eyes open, mouth closed)
- * and rewind behind it — so she never freezes mid-blink or with her mouth open, and the next
- * sentence starts seamlessly from that same frame.
+ * Video tutor built from two aligned loops: the idle clip always plays underneath, and the
+ * talking clip cross-fades in while the tutor's voice is audible. Both clips were cropped to the
+ * same face position, so the fade reads as one continuous person rather than a cut.
  */
 const VideoAvatar: FC<VideoAvatarProps> = ({ tutor, mode, className, onFail }) => {
   const t = tutorInfo(tutor);
-  const ref = useRef<HTMLVideoElement>(null);
+  const talkRef = useRef<HTMLVideoElement>(null);
   const [talking, setTalking] = useState(false);
+  const lipsync = mode === 'lipsync' && (t.clips ?? []).includes('talk');
 
   useEffect(() => {
-    const v = ref.current;
-    if (!v || mode !== 'lipsync') return undefined;
+    const v = talkRef.current;
+    if (!v || !lipsync) return undefined;
     let raf = 0;
     let lastVoice = -Infinity;
+    let shownAt = 0;
     let on = false;
-    let rewindTimer = 0;
+    let resetTimer = 0;
 
     const tick = (now: number): void => {
       if (isSpeaking() && getMouthLevel() > VOICE_THRESHOLD) lastVoice = now;
-      const shouldTalk = now - lastVoice < SILENCE_MS;
-      if (shouldTalk && !on) {
+      const voice = now - lastVoice < SILENCE_MS;
+      if (voice && !on) {
         on = true;
-        window.clearTimeout(rewindTimer);
-        setTalking(true);
+        shownAt = now;
+        window.clearTimeout(resetTimer);
         v.play().catch(() => undefined);
-      } else if (!shouldTalk && on) {
+        setTalking(true);
+      } else if (!voice && on && now - shownAt > MIN_TALK_MS) {
         on = false;
         setTalking(false);
-        // Rewind once the still image has faded in over the video.
-        rewindTimer = window.setTimeout(() => {
+        // After the fade-out, rewind so the next sentence starts from the calm first frame.
+        resetTimer = window.setTimeout(() => {
           v.pause();
           v.currentTime = 0;
-        }, 200);
+        }, FADE_MS + 40);
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
-      window.clearTimeout(rewindTimer);
+      window.clearTimeout(resetTimer);
     };
-  }, [mode]);
-
-  const lipsync = mode === 'lipsync';
-  // Tutors without an idle clip show their resting still outside calls.
-  const stillOnly = !lipsync && !(t.clips ?? []).includes('idle');
-
-  if (stillOnly) {
-    return (
-      <div className={clsx(styles.frame, styles.still, className)} style={{ ['--avatar-bg' as string]: t.videoBg ?? 'var(--sun)' }}>
-        <img className={styles.rest} style={{ opacity: 1 }} src={`./avatars/${t.id}-talk-poster.jpg`} alt={t.name} onError={onFail} />
-      </div>
-    );
-  }
+  }, [lipsync]);
 
   return (
-    <div
-      className={clsx(styles.frame, lipsync && !talking && styles.still, className)}
-      style={{ ['--avatar-bg' as string]: t.videoBg ?? 'var(--sun)' }}
-    >
+    <div className={clsx(styles.frame, className)} style={{ ['--avatar-bg' as string]: t.videoBg ?? 'var(--sun)' }}>
       <video
-        ref={ref}
         className={styles.clip}
-        src={`./avatars/${t.id}-${lipsync ? 'talk' : 'idle'}.mp4`}
-        poster={`./avatars/${t.id}-${lipsync ? 'talk-poster' : 'poster'}.jpg`}
+        src={`./avatars/${t.id}-idle.mp4`}
+        poster={`./avatars/${t.id}-poster.jpg`}
         muted
         playsInline
         loop
+        autoPlay
         preload="auto"
-        autoPlay={!lipsync}
         aria-label={t.name}
         onError={onFail}
       />
       {lipsync && (
-        <img className={clsx(styles.rest, !talking && styles.restOn)} src={`./avatars/${t.id}-talk-poster.jpg`} alt="" aria-hidden="true" />
+        <video
+          ref={talkRef}
+          className={clsx(styles.clip, styles.talk, talking && styles.talkOn)}
+          src={`./avatars/${t.id}-talk.mp4`}
+          muted
+          playsInline
+          loop
+          preload="auto"
+          aria-hidden="true"
+          onError={onFail}
+        />
       )}
     </div>
   );
