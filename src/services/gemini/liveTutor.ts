@@ -25,7 +25,7 @@ const TOOLS = [
       {
         name: 'show_song',
         description:
-          'Shows the learner a button that opens a song or video on YouTube. Use it when the learner asks to hear a song or music video, or when a song would help the lesson. You cannot play audio yourself.',
+          'Shows the learner a button that opens a song or video on YouTube. Use it ONLY when the learner explicitly asks to hear a song or music video. You cannot play audio yourself.',
         parameters: {
           type: Type.OBJECT,
           properties: {
@@ -340,6 +340,12 @@ export class LiveTutor {
     } catch (err) {
       this.ev.onState('error', String((err as Error)?.message ?? err));
     }
+  }
+
+  /** A turn from the app itself (not the learner's words) that the tutor should react to out loud. */
+  sendAppTurn(text: string): void {
+    this.player?.interrupt();
+    this.sendTurn(text);
   }
 
   /** Typed message from the chat panel, answered by voice in the same call. */

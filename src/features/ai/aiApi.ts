@@ -1,7 +1,7 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { generateJson } from '../../services/gemini/text';
 import { FEEDBACK_MODEL } from '../../services/gemini/models';
-import { buildFeedbackPrompt, buildSummaryPrompt, buildTutorPrompt } from '../../services/tutorPrompt';
+import { buildFeedbackPrompt, buildSongPrompt, buildSummaryPrompt, buildTutorPrompt } from '../../services/tutorPrompt';
 import type { ChatMessage, Correction, LearnerMemory, Level, Mood, Profile, Scenario, SessionSummary, TutorTurn } from '../../types';
 
 export interface AiError {
@@ -85,6 +85,18 @@ export const aiApi = createApi({
         }
       },
     }),
+    suggestSong: builder.mutation<{ query: string; why: string }, { profile: Profile; history: ChatMessage[] }>({
+      queryFn: async ({ profile, history }) => {
+        try {
+          const o = (await generateJson(profile.apiKey, profile.textModel, buildSongPrompt(profile, history))) as Record<string, unknown>;
+          const query = str(o.query).trim();
+          if (!query) return { error: { code: 'error', message: 'no song' } };
+          return { data: { query: query.slice(0, 120), why: str(o.why).slice(0, 160) } };
+        } catch (e) {
+          return { error: toAiError(e) };
+        }
+      },
+    }),
     summarize: builder.mutation<SessionSummary, { profile: Profile; history: ChatMessage[] }>({
       queryFn: async ({ profile, history }) => {
         try {
@@ -110,4 +122,4 @@ export const aiApi = createApi({
   }),
 });
 
-export const { useTutorTurnMutation, useFeedbackMutation, useSummarizeMutation } = aiApi;
+export const { useTutorTurnMutation, useFeedbackMutation, useSuggestSongMutation, useSummarizeMutation } = aiApi;

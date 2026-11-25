@@ -8,7 +8,7 @@ import { useCallMediaSession } from '../../hooks/useCallMediaSession';
 import { useSpeaking } from '../../hooks/useSpeaking';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { useTutorVoice } from '../../hooks/useTutorVoice';
-import { useFeedbackMutation, useSummarizeMutation, useTutorTurnMutation, type AiError } from '../../features/ai/aiApi';
+import { useFeedbackMutation, useSuggestSongMutation, useSummarizeMutation, useTutorTurnMutation, type AiError } from '../../features/ai/aiApi';
 import { updateProfile } from '../../features/profile/profileSlice';
 import { addMinutes, addMistake, addXp, saveWord } from '../../features/progress/progressSlice';
 import { addMessage, setSummary, setView, updateMessage } from '../../features/session/sessionSlice';
@@ -45,6 +45,7 @@ const Call: FC = () => {
   const [chatTurn, { isLoading: chatLoading }] = useTutorTurnMutation();
   const [feedback] = useFeedbackMutation();
   const [summarize, { isLoading: summarizing }] = useSummarizeMutation();
+  const [suggestSong, { isLoading: suggestingSong }] = useSuggestSongMutation();
 
   const audioPlaying = useSpeaking();
   const [mode, setMode] = useState<Mode>('voice');
@@ -316,6 +317,18 @@ const Call: FC = () => {
     if (audioPlaying) setThinkingHint(false);
   }, [audioPlaying]);
 
+  const handleSuggestSong = async (): Promise<void> => {
+    const res = await suggestSong({ profile: profileRef.current, history: messagesRef.current });
+    if (!('data' in res) || !res.data) {
+      setNotice(errorText('error' in res ? (res.error as AiError) : undefined));
+      return;
+    }
+    setSong(res.data);
+    tutorRef.current?.sendAppTurn(
+      `(The learner tapped "suggest a song". The app is now showing a button for "${res.data.query}". In one or two sentences, tell them why this song fits what you're talking about and one useful phrase from it, then continue the conversation.)`,
+    );
+  };
+
   const handleMute = (): void => {
     const next = !muted;
     setMuted(next);
@@ -520,6 +533,11 @@ const Call: FC = () => {
           <p className={styles.userCaption} dir="auto"><span>{s.youSaid}</span> {userCaption}</p>
         )}
         {!caption && !userCaption && live && <p className={styles.hint}>{profile.turnMode === 'tap' ? s.tapModeHint : s.tapToTalk}</p>}
+        {!song && (live || mode === 'text') && (
+          <button type="button" className={styles.songAsk} onClick={() => void handleSuggestSong()} disabled={suggestingSong}>
+            <Icon name="music" size={16} /> {suggestingSong ? s.thinking : s.suggestSong}
+          </button>
+        )}
         {song && (
           <div className={styles.song}>
             <Icon name="music" size={22} />

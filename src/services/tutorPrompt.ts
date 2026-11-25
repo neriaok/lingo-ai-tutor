@@ -108,7 +108,7 @@ HOW TO SOUND HUMAN
 - If the learner interrupts you, stop and respond to what they said.
 - Pronunciation: if a word was clearly mispronounced, naturally repeat it correctly in your reply (stress the word slightly). Only occasionally, briefly ask them to try it again — never more than once per word.
 - If you didn't catch what they said, ask them to repeat like a real person would ("Sorry, say that again?").
-- You cannot play music, videos or open apps yourself — never pretend to. If the learner asks for a song (or a song would help), call the show_song tool and say the song title and artist out loud, telling them a button to open it will appear on their screen in a moment. Afterwards, talk about the song: its words, idioms and what they liked.
+- You cannot play music, videos or open apps yourself — never pretend to. Only when the learner explicitly asks to hear a song, call the show_song tool and say the song title and artist out loud, telling them a button to open it will appear on their screen. Don't offer songs on your own. Afterwards, talk about the song: its words, idioms and what they liked.
 - Weave in their interests naturally. Keep it warm, safe and encouraging.${memoryLines(memory)}${
     transcript.length
       ? `\n\nTHIS CALL SO FAR (it was interrupted; continue from here)\n${transcript
@@ -136,7 +136,7 @@ The tutor replied: "${tutorText}"
 
 ${correctionRule[profile.correction]} Ignore missing punctuation/capitalization since it is speech. Explanations in ${native}, short and friendly.
 Return ONLY one JSON object:
-{"translation":"tutor reply in ${native}","correction":{"original":"...","corrected":"...","explanation":"..."} or null,"newWords":[{"word":"from the tutor reply, possibly new at ${profile.level}","meaning":"in ${native}","example":"short ${target} example"}] (0-3),"suggestions":["possible answers in ${target} at level ${profile.level}"] (A1-B1: 3, B2: 2, C1+: 0),"mood":"happy|thinking|surprised|encouraging","assessedLevel":"A1..C2 only if the tutor just announced a placement result, else null","song":{"query":"YouTube search: song title + artist","why":"one short line in ${native}"} — ONLY if the learner asked to hear/play a song or music in this exchange, or the tutor suggested a specific song; otherwise null. If no specific song was named, pick a well-known one that fits the request and the learner's level}`;
+{"translation":"tutor reply in ${native}","correction":{"original":"...","corrected":"...","explanation":"..."} or null,"newWords":[{"word":"from the tutor reply, possibly new at ${profile.level}","meaning":"in ${native}","example":"short ${target} example"}] (0-3),"suggestions":["possible answers in ${target} at level ${profile.level}"] (A1-B1: 3, B2: 2, C1+: 0),"mood":"happy|thinking|surprised|encouraging","assessedLevel":"A1..C2 only if the tutor just announced a placement result, else null","song":{"query":"YouTube search: song title + artist","why":"one short line in ${native}"} — ONLY if the learner explicitly asked to hear/play a song or music in this exchange (never because the tutor mentioned or suggested one); otherwise null. If they didn't name a specific song, pick a well-known one that fits the request and their level}`;
 };
 
 export const buildTutorPrompt = (profile: Profile, scenario: Scenario, history: ChatMessage[], memory?: LearnerMemory): string => {
@@ -179,7 +179,7 @@ CURRENT LANGUAGE MODE (overrides earlier turns): ${profile.explainMode === 'mixe
 
 Answer with ONLY one JSON object, no prose, no code fences:
 {"reply":"...","translation":"...","correction":{"original":"...","corrected":"...","explanation":"..."} or null,"newWords":[{"word":"...","meaning":"...","example":"..."}],"suggestions":["..."],"mood":"happy","assessedLevel":null,"song":null}
-("song": {"query":"song title + artist","why":"short line in ${native}"} only if the learner asked for a song or you suggested a specific one — you can't play music, the app shows a YouTube button.)`;
+("song": {"query":"song title + artist","why":"short line in ${native}"} only if the learner explicitly asked to hear a song — you can't play music, the app shows a YouTube button. Don't suggest songs on your own.)`;
 };
 
 export const buildSummaryPrompt = (profile: Profile, history: ChatMessage[]): string => {
@@ -194,4 +194,19 @@ ${transcript}
 
 Return ONLY one JSON object (all explanation text in ${native}):
 {"score":0-100 (fluency+accuracy for their level),"headline":"one encouraging sentence","strengths":["2-3 short points"],"mistakes":[{"original":"learner's words","corrected":"correct ${target}","explanation":"why"}] (max 4, most useful first),"tip":"one concrete tip for next time","recap":"1-2 sentences IN ENGLISH, third person, of personal things the learner shared (facts, plans, opinions, topics) that a tutor should remember next time"}`;
+};
+
+/** "Suggest me a song" button: one song that fits the current conversation and level. */
+export const buildSongPrompt = (profile: Profile, history: ChatMessage[]): string => {
+  const native = langInfo(profile.native).name;
+  const target = langInfo(profile.target).name;
+  const recent = history
+    .slice(-10)
+    .map((m) => `${m.role === 'user' ? 'LEARNER' : 'TUTOR'}: ${m.text}`)
+    .join('\n');
+  const interests = profile.interests.join(', ');
+  return `Suggest ONE real, well-known ${target} song for a ${profile.level} learner (interests: ${interests || 'general'}) that connects to what this conversation is about, with clear lyrics that help learning.
+Conversation:
+${recent || '(just started)'}
+Return ONLY JSON: {"query":"song title + artist (YouTube search)","why":"one short line in ${native}: how it connects to the topic and a useful phrase from it"}`;
 };
