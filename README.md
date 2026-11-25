@@ -34,6 +34,8 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 - 💬 **Optional chat panel**: type during a call and the tutor answers by voice. If the mic is unavailable, the app falls back to a full text chat.
 - 📝 **Live captions** for both sides, with a one-tap translation into your native language.
 - 🔀 **Explanation language switch**, available inside the call: everything in the target language, or keep the conversation in it while the tutor explains grammar and meanings in your native language.
+- 📞 **Background calls**: switch to other apps and keep talking, like a real phone call. The phone shows mute and hang-up controls. Works in the app installed from the website via Chrome.
+- 🎵 **Songs on request**: tutors can't play audio, so they use a Gemini Live tool call to put an "open on YouTube" button on screen. The mic is muted while you listen, and afterwards you talk about the song.
 - 💾 **Every conversation is saved automatically.** If a call is cut off by an incoming phone call, an app switch or a reload, you can continue exactly where you stopped. Past conversations can be re-read and resumed at any time.
 
 **Learning**
