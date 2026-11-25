@@ -10,6 +10,9 @@ Cloudflare Worker that sends Lingo's daily practice reminders as Web Push notifi
 Subscribers are stored in the `SUBS` KV namespace; everything needed lives in key metadata,
 so a cron run only uses `list()` — well within the Workers Free plan.
 
+Deployed automatically by Cloudflare Workers Builds on pushes to `main` that touch `worker/`.
+Manual deploy:
+
 ```bash
 npm install
 npx wrangler secret put VAPID_PRIVATE_KEY   # private half of the VAPID key pair

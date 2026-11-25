@@ -1,4 +1,8 @@
-name: Deploy web app
+name: Web checks & legacy redirect
+
+# The web app itself is deployed to Cloudflare Workers by Workers Builds on every push to main
+# (see wrangler.jsonc). This workflow runs the quality gates and keeps the old GitHub Pages
+# address redirecting to https://lingo.neriaokabik.workers.dev/.
 
 on:
   push:
@@ -15,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,17 +32,17 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
 
-  deploy:
-    needs: build
+  redirect:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: legacy-pages
       - id: deployment
         uses: actions/deploy-pages@v4

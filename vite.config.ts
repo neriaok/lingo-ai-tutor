@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
 
 // Shown in Settings so it's easy to tell which version is running on a phone.
-const commit = (process.env.GITHUB_SHA ?? (() => {
+const commit = (process.env.GITHUB_SHA ?? process.env.WORKERS_CI_COMMIT_SHA ?? (() => {
   try {
     return execSync('git rev-parse HEAD').toString().trim();
   } catch {

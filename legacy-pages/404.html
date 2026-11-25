@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lingo has moved</title>
+  <meta http-equiv="refresh" content="0; url=https://lingo.neriaokabik.workers.dev/" />
+  <link rel="canonical" href="https://lingo.neriaokabik.workers.dev/" />
+  <script>
+    // Remove the old app's service worker and caches, then go to the new address.
+    (async () => {
+      try {
+        const regs = (await navigator.serviceWorker?.getRegistrations()) ?? [];
+        await Promise.all(regs.map((r) => r.unregister()));
+        const keys = (await caches?.keys()) ?? [];
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } catch {}
+      location.replace('https://lingo.neriaokabik.workers.dev/');
+    })();
+  </script>
+</head>
+<body style="font-family:system-ui;text-align:center;padding:3rem">
+  <p>Lingo עברה לכתובת חדשה · Lingo has moved</p>
+  <p><a href="https://lingo.neriaokabik.workers.dev/">lingo.neriaokabik.workers.dev</a></p>
+</body>
+</html>
