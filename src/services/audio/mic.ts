@@ -43,6 +43,8 @@ const toBase64 = (buf: ArrayBuffer): string => {
 
 export interface MicHandle {
   setMuted: (muted: boolean) => void;
+  /** Wakes the capture graph if the OS suspended it while the app was in the background. */
+  resume: () => Promise<void>;
   stop: () => Promise<void>;
 }
 
@@ -72,6 +74,9 @@ export const startMic = async (
   sink.connect(ctx.destination);
 
   return {
+    resume: async () => {
+      if (ctx.state !== 'running') await ctx.resume().catch(() => undefined);
+    },
     setMuted: (m) => {
       muted = m;
       stream.getAudioTracks().forEach((t) => (t.enabled = !m));

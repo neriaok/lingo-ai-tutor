@@ -1,4 +1,4 @@
-import { EndSensitivity, Modality, StartSensitivity, type LiveServerMessage, type Session } from '@google/genai';
+import { EndSensitivity, Modality, StartSensitivity, Type, type LiveServerMessage, type Session } from '@google/genai';
 import { getClient } from './client';
 import { LIVE_MODEL_CANDIDATES } from './models';
 import { startMic, type MicHandle } from '../audio/mic';
@@ -15,7 +15,29 @@ export interface LiveTutorEvents {
   /** One full exchange finished. */
   onTurn: (turn: { user: string; tutor: string }) => void;
   onMicLevel: (level: number) => void;
+  /** The tutor wants to show the learner a song/video (opened by the learner's tap — browsers block auto-opening). */
+  onSong?: (song: { query: string; why: string }) => void;
 }
+
+const TOOLS = [
+  {
+    functionDeclarations: [
+      {
+        name: 'show_song',
+        description:
+          'Shows the learner a button that opens a song or video on YouTube. Use it when the learner asks to hear a song or music video, or when a song would help the lesson. You cannot play audio yourself.',
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            query: { type: Type.STRING, description: 'YouTube search query: song title and artist, e.g. "Bohemian Rhapsody Queen lyrics".' },
+            why: { type: Type.STRING, description: 'One short line on why this song (in the learner\'s native language).' },
+          },
+          required: ['query'],
+        },
+      },
+    ],
+  },
+];
 
 export interface LiveTutorOptions {
   apiKey: string;
@@ -147,6 +169,7 @@ export class LiveTutor {
       ? base
       : {
           ...base,
+          tools: this.ev.onSong ? TOOLS : undefined,
           contextWindowCompression: { slidingWindow: {} },
           sessionResumption: resuming && this.resumeHandle ? { handle: this.resumeHandle } : {},
         };
@@ -174,6 +197,16 @@ export class LiveTutor {
       this.resumeHandle = m.sessionResumptionUpdate.newHandle;
     }
     if (m.goAway) void this.reconnect();
+
+    for (const call of m.toolCall?.functionCalls ?? []) {
+      if (call.name === 'show_song') {
+        const args = (call.args ?? {}) as { query?: string; why?: string };
+        if (args.query) this.ev.onSong?.({ query: args.query, why: args.why ?? '' });
+        this.session?.sendToolResponse({
+          functionResponses: { id: call.id, name: call.name, response: { result: 'A button that opens this song on YouTube is now on the learner\'s screen. Tell them to tap it, and that the microphone will be muted while it plays.' } },
+        });
+      }
+    }
 
     const sc = m.serverContent;
     if (!sc) return;
@@ -265,6 +298,16 @@ export class LiveTutor {
     this.holdMicUntil = Date.now() + 400;
     this.session.sendRealtimeInput({ audioStreamEnd: true });
     this.ev.onState('thinking');
+  }
+
+  /** Called when the app returns to the foreground: resume audio the OS may have suspended. */
+  async wake(): Promise<void> {
+    await this.player?.resume().catch(() => undefined);
+    await this.mic?.resume();
+  }
+
+  isMuted(): boolean {
+    return this.muted;
   }
 
   /** Silent instruction to the tutor mid-call (e.g. switching explanation language). */

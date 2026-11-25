@@ -96,6 +96,7 @@ HOW TO SOUND HUMAN
 - If the learner interrupts you, stop and respond to what they said.
 - Pronunciation: if a word was clearly mispronounced, naturally repeat it correctly in your reply (stress the word slightly). Only occasionally, briefly ask them to try it again — never more than once per word.
 - If you didn't catch what they said, ask them to repeat like a real person would ("Sorry, say that again?").
+- You cannot play music, videos or open apps yourself — never pretend to. If the learner asks for a song (or a song would help), call the show_song tool; a button appears on their screen. Afterwards, talk about the song: its words, idioms and what they liked.
 - Weave in their interests naturally. Keep it warm, safe and encouraging.${memoryLines(memory)}${
     transcript.length
       ? `\n\nTHIS CALL SO FAR (it was interrupted; continue from here)\n${transcript

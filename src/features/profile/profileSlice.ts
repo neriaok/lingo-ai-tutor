@@ -19,6 +19,7 @@ export const defaultProfile: Profile = {
   correction: 'gentle',
   explainMode: 'target',
   turnMode: 'auto',
+  backgroundCall: true,
   thinkTime: 'normal',
   videoAvatar: true,
   dailyMinutes: 10,

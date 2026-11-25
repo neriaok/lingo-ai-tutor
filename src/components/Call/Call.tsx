@@ -4,7 +4,9 @@ import { SCENARIOS, langInfo, tutorInfo } from '../../data/catalog';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { useStrings } from '../../hooks/useStrings';
 import { useLearnerMemory } from '../../hooks/useLearnerMemory';
+import { useCallMediaSession } from '../../hooks/useCallMediaSession';
 import { useSpeaking } from '../../hooks/useSpeaking';
+import { useWakeLock } from '../../hooks/useWakeLock';
 import { useTutorVoice } from '../../hooks/useTutorVoice';
 import { useFeedbackMutation, useSummarizeMutation, useTutorTurnMutation, type AiError } from '../../features/ai/aiApi';
 import { updateProfile } from '../../features/profile/profileSlice';
@@ -55,6 +57,7 @@ const Call: FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [tapTalking, setTapTalking] = useState(false);
   const [thinkingHint, setThinkingHint] = useState(false);
+  const [song, setSong] = useState<{ query: string; why: string } | null>(null);
 
   const tutorRef = useRef<LiveTutor | null>(null);
   const typedRef = useRef(false);
@@ -120,6 +123,7 @@ const Call: FC = () => {
           setShowTranslation(false);
         },
         onMicLevel: setMicLevel,
+        onSong: setSong,
         onTurn: ({ user, tutor: tutorText }) => {
           if (user && !typedRef.current) {
             dispatch(addMessage({ id: uid(), role: 'user', text: user, via: 'voice' }));
@@ -162,19 +166,31 @@ const Call: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Phone call, app switch or screen lock: hang up cleanly and offer to resume (transcript is saved).
+  // Leaving the app: in background mode the call simply continues (like a phone call);
+  // otherwise hang up cleanly and offer to resume (the transcript is saved either way).
   useEffect(() => {
-    const handleHidden = (): void => {
-      if (document.visibilityState !== 'hidden' || !tutorRef.current) return;
+    const handleVisibility = (): void => {
       const t = tutorRef.current;
+      if (!t) return;
+      if (document.visibilityState === 'visible') {
+        void t.wake();
+        return;
+      }
+      if (profileRef.current.backgroundCall) return;
       tutorRef.current = null;
       void t.stop('paused');
     };
-    document.addEventListener('visibilitychange', handleHidden);
-    window.addEventListener('pagehide', handleHidden);
+    const handlePageHide = (): void => {
+      const t = tutorRef.current;
+      if (!t || profileRef.current.backgroundCall) return;
+      tutorRef.current = null;
+      void t.stop('paused');
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', handlePageHide);
     return () => {
-      document.removeEventListener('visibilitychange', handleHidden);
-      window.removeEventListener('pagehide', handleHidden);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, []);
 
@@ -336,6 +352,17 @@ const Call: FC = () => {
     ended: s.endCall,
     error: s.callError,
   };
+  useWakeLock(live);
+  useCallMediaSession({
+    active: live && mode === 'voice',
+    title: `${tutor.name} · Lingo`,
+    subtitle: scenario.title[isHe ? 'he' : 'en'],
+    artwork: `./avatars/${tutor.id}-poster.jpg`,
+    muted,
+    onToggleMute: handleMute,
+    onHangUp: () => void handleEnd(),
+  });
+
   const caption = tutorCaption || lastTutor?.text || '';
   const captionTurn = !tutorCaption || tutorCaption === lastTutor?.text ? lastTutor?.turn : undefined;
   const mood = callState === 'connecting' || chatLoading ? 'thinking' : lastTutor?.turn?.mood ?? 'happy';
@@ -432,6 +459,28 @@ const Call: FC = () => {
           <p className={styles.userCaption} dir="auto"><span>{s.youSaid}</span> {userCaption}</p>
         )}
         {!caption && !userCaption && live && <p className={styles.hint}>{profile.turnMode === 'tap' ? s.tapModeHint : s.tapToTalk}</p>}
+        {song && (
+          <div className={styles.song}>
+            <Icon name="music" size={22} />
+            <span className={styles.songText}>
+              <strong dir="auto">{song.query}</strong>
+              {song.why && <small dir="auto">{song.why}</small>}
+            </span>
+            <a
+              className={styles.songBtn}
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(song.query)}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => {
+                // Mute so the tutor doesn't "hear" the song; unmute when you're back.
+                if (!muted) handleMute();
+              }}
+            >
+              {s.openSong}
+            </a>
+            <button type="button" className={styles.songClose} aria-label={s.closeChat} onClick={() => setSong(null)}>✕</button>
+          </div>
+        )}
         {captionTurn && (
           <FeedbackCard
             turn={captionTurn}

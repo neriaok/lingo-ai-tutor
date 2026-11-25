@@ -23,6 +23,8 @@ export interface Profile {
   correction: CorrectionStyle;
   explainMode: ExplainMode;
   turnMode: TurnMode;
+  /** Keep the call going when the app is in the background, like a real phone call. */
+  backgroundCall: boolean;
   thinkTime: ThinkTime;
   /** Use the animated video tutor when the tutor has clips. */
   videoAvatar: boolean;
