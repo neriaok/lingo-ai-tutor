@@ -13,6 +13,7 @@ export class PcmPlayer {
   private nextTime = 0;
   private sources = new Set<AudioBufferSourceNode>();
   private idleTimer = 0;
+  private element: HTMLAudioElement | null = null;
 
   constructor(private sampleRate = 24000) {
     this.ctx = new AudioContext();
@@ -21,12 +22,32 @@ export class PcmPlayer {
     this.analyser.fftSize = 512;
     this.buf = new Uint8Array(new ArrayBuffer(this.analyser.fftSize));
     this.gain.connect(this.analyser);
-    this.analyser.connect(this.ctx.destination);
     setMouthSource(() => this.level());
   }
 
+  /**
+   * Routes the tutor's voice through an <audio> element. Browsers treat that as real media
+   * playback, which keeps the call alive in the background and shows media controls.
+   * Falls back to plain Web Audio output if the element can't play.
+   */
   async resume(): Promise<void> {
     if (this.ctx.state !== 'running') await this.ctx.resume();
+    if (this.element) {
+      if (this.element.paused) await this.element.play().catch(() => undefined);
+      return;
+    }
+    try {
+      const dest = this.ctx.createMediaStreamDestination();
+      this.analyser.connect(dest);
+      const el = new Audio();
+      el.srcObject = dest.stream;
+      el.setAttribute('playsinline', '');
+      await el.play();
+      this.element = el;
+    } catch {
+      this.analyser.disconnect();
+      this.analyser.connect(this.ctx.destination);
+    }
   }
 
   /** RMS of the current output, scaled to roughly 0..1. */
@@ -90,6 +111,11 @@ export class PcmPlayer {
   async close(): Promise<void> {
     this.interrupt();
     setMouthSource(null);
+    if (this.element) {
+      this.element.pause();
+      this.element.srcObject = null;
+      this.element = null;
+    }
     await this.ctx.close().catch(() => undefined);
   }
 }

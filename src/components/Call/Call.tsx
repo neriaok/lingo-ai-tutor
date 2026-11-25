@@ -14,6 +14,7 @@ import { addMinutes, addMistake, addXp, saveWord } from '../../features/progress
 import { addMessage, setSummary, setView, updateMessage } from '../../features/session/sessionSlice';
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
 import { buildLiveInstruction } from '../../services/tutorPrompt';
+import { startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
 import { stopSpeaking } from '../../services/speech';
 import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
@@ -353,6 +354,14 @@ const Call: FC = () => {
     error: s.callError,
   };
   useWakeLock(live);
+
+  // Android app: a foreground service keeps the mic alive while you use other apps.
+  const backgroundActive = live && mode === 'voice' && profile.backgroundCall;
+  useEffect(() => {
+    if (!backgroundActive) return undefined;
+    void startBackgroundCall(`${tutor.name} · Lingo`, s.backgroundNotice);
+    return () => void stopBackgroundCall();
+  }, [backgroundActive, tutor.name, s.backgroundNotice]);
   useCallMediaSession({
     active: live && mode === 'voice',
     title: `${tutor.name} · Lingo`,
