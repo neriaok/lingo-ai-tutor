@@ -21,3 +21,29 @@
 .later { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: #fff; font-size: 18px; }
 @keyframes in { from { transform: translateY(20px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .bar { animation: none; } }
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(20, 19, 24, 0.55);
+  backdrop-filter: blur(3px);
+}
+.card {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+}
+.card strong { font-size: 19px; }
+.card small { color: var(--muted); font-size: 13px; }
+.track { height: 12px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.track span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #f5bd23, #ff4f6d); transition: width 0.25s ease; }
+.meta { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
+.meta b { font-variant-numeric: tabular-nums; }

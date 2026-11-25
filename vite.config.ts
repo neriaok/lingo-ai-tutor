@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
@@ -14,13 +14,23 @@ const commit = (process.env.GITHUB_SHA ?? (() => {
 const builtAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
 // Relative base so the same build works on GitHub Pages (/lingo-ai-tutor/) and inside the Android app.
+// Published next to the app so a running copy can tell a newer version is live.
+const versionFile = (): Plugin => ({
+  name: 'lingo-version-file',
+  generateBundle() {
+    this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ commit, builtAt }) });
+  },
+});
+
 export default defineConfig({
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(`${commit} · ${builtAt} UTC`),
+    __APP_COMMIT__: JSON.stringify(commit),
   },
   plugins: [
     react(),
+    versionFile(),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.png', 'apple-touch-icon.png', 'offline.html'],
