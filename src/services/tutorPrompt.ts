@@ -2,8 +2,8 @@ import { INTERESTS, GOALS, langInfo, tutorInfo } from '../data/catalog';
 import type { ChatMessage, LearnerMemory, Profile, Scenario } from '../types';
 
 const correctionRule: Record<Profile['correction'], string> = {
-  instant: 'Correct EVERY grammar, vocabulary or spelling mistake in the learner\'s last message.',
-  gentle: 'Correct only mistakes that change meaning or are very common errors; ignore tiny slips.',
+  instant: 'Correct EVERY mistake in the learner\'s last message (grammar, word choice, word order, tense, prepositions, unnatural phrasing). "corrected" is the full natural sentence, not a fragment.',
+  gentle: 'Correct every real mistake a native speaker would notice (grammar, wrong word, tense, word order); ignore only tiny slips. "corrected" is the full natural sentence, not a fragment.',
   none: 'Never correct; always set correction to null.',
 };
 
@@ -79,12 +79,15 @@ export const buildLiveInstruction = (
 ): string => {
   const tutor = tutorInfo(profile.tutor);
   const target = langInfo(profile.target).name;
+  const native = langInfo(profile.native).name;
+  const explainIn = profile.explainMode === 'mixed' ? native : target;
+  const howToCorrect = `say it explicitly and warmly, like a good teacher: (1) point out what they said ("You said '...'"), (2) say the correct way ("We say: '...'") as a complete, natural sentence, (3) explain why in ONE short sentence in ${explainIn}, (4) ask them to say the correct sentence once, then praise briefly and continue the conversation. Keep it quick — about 10 seconds.`;
   const corr =
     profile.correction === 'none'
-      ? 'Do not correct mistakes out loud.'
+      ? 'Do not correct mistakes out loud; just keep the conversation going.'
       : profile.correction === 'instant'
-        ? 'When the learner makes a mistake, naturally recast the correct form in your reply (e.g. "Oh, you went to the beach? Nice!") — never lecture.'
-        : 'Only recast mistakes that would confuse a native speaker; let small slips go.';
+        ? `CORRECTING IS YOUR MAIN JOB — the learner's goal is to learn ${target} properly. Whenever the learner's sentence has ANY mistake (grammar, word choice, word order, tense, preposition, unnatural phrasing), ${howToCorrect} Never let a mistake pass silently.`
+        : `The learner's goal is to learn ${target} properly. When the learner makes a real mistake (grammar, wrong word, tense, word order — anything a native speaker would notice), ${howToCorrect} Let only tiny slips go.`;
 
   return `You are ${tutor.name}, a real person having a live voice call with a learner of ${target}. Personality: ${tutor.persona}.
 YOUR STYLE (stay in character the whole call):
@@ -101,7 +104,7 @@ HOW TO SOUND HUMAN
 - Share small opinions and stories of your own so it feels two-sided; then hand the turn back with a question.
 - Never use lists, markdown, emojis or say things like "as an AI". Never describe what you are doing.
 - ${profile.explainMode === 'mixed' ? `The conversation is in ${target} (with ${langInfo(profile.native).name} explanations as described below).` : `Speak ${target}.`} ${spokenLevelRule(profile.level)}
-- ${corr} The app shows written corrections on screen, so keep the flow going.
+- CORRECTIONS: ${corr}
 - If the learner interrupts you, stop and respond to what they said.
 - Pronunciation: if a word was clearly mispronounced, naturally repeat it correctly in your reply (stress the word slightly). Only occasionally, briefly ask them to try it again — never more than once per word.
 - If you didn't catch what they said, ask them to repeat like a real person would ("Sorry, say that again?").
@@ -160,7 +163,8 @@ RULES
 - ${profile.explainMode === 'mixed' ? `"reply" is in ${target}, with short ${native} explanations mixed in as described below.` : `Speak ONLY ${target} in "reply".`} Keep it to 1–3 sentences and end with a question or prompt so the learner keeps talking.
 - ${levelRule(profile.level)}
 - Weave the learner's interests in naturally when relevant.
-- ${correctionRule[profile.correction]} Explanations are written in ${native}, short and friendly.
+- ${correctionRule[profile.correction]} Explanations are written in ${native}, short and friendly.${profile.correction === 'none' ? '' : `
+- If the learner's last message had a mistake, START "reply" with a quick spoken-style correction in ${target} (e.g. "Small fix: we say '...'.") and then continue the conversation.`}
 - If the learner writes in ${native}, gently help them say it in ${target} (put the ${target} version in suggestions) and continue.
 - ${explainRule(profile)}
 - newWords: 0–3 words/phrases from YOUR reply that may be new at this level, each with meaning in ${native} and a short ${target} example.

@@ -29,6 +29,9 @@ const FeedbackCard: FC<FeedbackCardProps> = ({ turn, targetRtl, nativeRtl, saved
           <span className={styles.tag}><Icon name="check" size={14} /> {s.correctionTitle}</span>
           <p dir={tDir}><del>{turn.correction.original}</del> <ins>{turn.correction.corrected}</ins></p>
           <small>{turn.correction.explanation}</small>
+          <button type="button" className={styles.hear} onClick={() => onSpeakWord(turn.correction?.corrected ?? '')}>
+            <Icon name="speaker" size={16} /> {s.hearCorrect}
+          </button>
         </div>
       )}
       {turn.newWords.length > 0 && (

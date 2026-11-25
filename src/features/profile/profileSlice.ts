@@ -6,6 +6,8 @@ import type { Profile } from '../../types';
 export interface ProfileState {
   data: Profile;
   onboarded: boolean;
+  /** Set once the one-time corrections migration has run. */
+  correctionsV2?: boolean;
 }
 
 export const defaultProfile: Profile = {
@@ -16,7 +18,7 @@ export const defaultProfile: Profile = {
   interests: [],
   goal: 'conversation',
   tutor: 'maya',
-  correction: 'gentle',
+  correction: 'instant',
   explainMode: 'target',
   turnMode: 'auto',
   backgroundCall: true,
@@ -31,9 +33,11 @@ export const defaultProfile: Profile = {
 };
 
 const saved = load<ProfileState>('profile');
+// v2: explicit corrections became the default (the goal is learning) — move "gentle" users up once.
+const migrated = saved && !saved.correctionsV2 && saved.data?.correction === 'gentle' ? { ...saved.data, correction: 'instant' as const } : saved?.data;
 const initialState: ProfileState = saved
-  ? { onboarded: saved.onboarded, data: { ...defaultProfile, ...saved.data } }
-  : { onboarded: false, data: defaultProfile };
+  ? { onboarded: saved.onboarded, data: { ...defaultProfile, ...migrated }, correctionsV2: true }
+  : { onboarded: false, data: defaultProfile, correctionsV2: true };
 
 const profileSlice = createSlice({
   name: 'profile',

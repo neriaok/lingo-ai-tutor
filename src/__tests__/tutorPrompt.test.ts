@@ -36,6 +36,13 @@ describe('tutor prompts', () => {
     expect(text).toContain('has just changed the explanation language');
   });
 
+  it('makes explicit correction the main job in "instant" mode', () => {
+    const text = buildLiveInstruction({ ...defaultProfile, correction: 'instant' }, scenario);
+    expect(text).toContain('CORRECTING IS YOUR MAIN JOB');
+    expect(text).toContain('We say:');
+    expect(buildLiveInstruction({ ...defaultProfile, correction: 'none' }, scenario)).not.toContain('MAIN JOB');
+  });
+
   it('includes memory from past calls and the transcript when resuming', () => {
     const text = buildLiveInstruction(defaultProfile, scenario, { words: ['awesome'], mistakes: [], recaps: ['Neria has a job interview on Sunday.'] }, [
       { id: '1', role: 'user', text: 'I like football', via: 'voice' },
