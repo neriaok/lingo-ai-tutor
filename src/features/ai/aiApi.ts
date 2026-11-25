@@ -1,5 +1,6 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { generateJson } from '../../services/gemini/text';
+import { FEEDBACK_MODEL } from '../../services/gemini/models';
 import { buildFeedbackPrompt, buildSummaryPrompt, buildTutorPrompt } from '../../services/tutorPrompt';
 import type { ChatMessage, Correction, LearnerMemory, Level, Mood, Profile, Scenario, SessionSummary, TutorTurn } from '../../types';
 
@@ -66,7 +67,13 @@ export const aiApi = createApi({
     feedback: builder.mutation<TutorTurn, { profile: Profile; learner: string; tutor: string }>({
       queryFn: async ({ profile, learner, tutor }) => {
         try {
-          const raw = (await generateJson(profile.apiKey, profile.textModel, buildFeedbackPrompt(profile, learner, tutor))) as Record<string, unknown>;
+          let raw: Record<string, unknown>;
+          try {
+            raw = (await generateJson(profile.apiKey, FEEDBACK_MODEL, buildFeedbackPrompt(profile, learner, tutor))) as Record<string, unknown>;
+          } catch {
+            // Lite model unavailable or rate-limited: try the main text model once.
+            raw = (await generateJson(profile.apiKey, profile.textModel, buildFeedbackPrompt(profile, learner, tutor))) as Record<string, unknown>;
+          }
           return { data: normalizeTurn({ ...raw, reply: tutor }) };
         } catch (e) {
           return { error: toAiError(e) };

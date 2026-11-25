@@ -9,6 +9,8 @@ export const LIVE_MODEL_CANDIDATES = [
 ];
 export const DEFAULT_TEXT_MODEL = 'gemini-3.5-flash';
 export const FALLBACK_TEXT_MODEL = 'gemini-2.5-flash';
+/** Per-turn feedback runs after every exchange, so it uses the lighter model with higher free-tier limits. */
+export const FEEDBACK_MODEL = 'gemini-3.1-flash-lite';
 
 /** Quick key check: lists models with the key (no SDK needed). */
 export const validateKey = async (apiKey: string): Promise<boolean> => {
