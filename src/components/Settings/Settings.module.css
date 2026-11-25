@@ -19,3 +19,4 @@
 .advanced summary { cursor: pointer; font-weight: 500; min-height: 28px; }
 .advanced[open] { gap: 12px; }
 .pick { width: 64px; border-radius: 16px; }
+.version { margin: 0; text-align: center; color: var(--muted); font-size: 13px; }

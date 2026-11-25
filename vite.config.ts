@@ -1,10 +1,24 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'node:child_process';
+
+// Shown in Settings so it's easy to tell which version is running on a phone.
+const commit = (process.env.GITHUB_SHA ?? (() => {
+  try {
+    return execSync('git rev-parse HEAD').toString().trim();
+  } catch {
+    return 'dev';
+  }
+})()).slice(0, 7);
+const builtAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
 // Relative base so the same build works on GitHub Pages (/lingo-ai-tutor/) and inside the Android app.
 export default defineConfig({
   base: './',
+  define: {
+    __APP_VERSION__: JSON.stringify(`${commit} · ${builtAt} UTC`),
+  },
   plugins: [
     react(),
     VitePWA({

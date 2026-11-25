@@ -200,6 +200,8 @@ const Settings: FC = () => {
           {confirmReset ? `${s.resetAll}?` : s.resetAll}
         </button>
       </div>
+
+      <p className={styles.version} dir="ltr">Lingo · {__APP_VERSION__}</p>
     </div>
   );
 };
