@@ -103,19 +103,19 @@ export const TUTORS: TutorInfo[] = [
     id: 'leo', name: 'Leo', he: 'מצחיק וקליל', en: 'Funny & casual',
     persona: 'funny, casual and energetic; uses light humor and slang appropriate to the level',
     voice: 'Puck', pitch: 0.9, skin: '#c98e62', hair: '#1c1c1c', shirt: '#2ec4b6', style: 'short', glasses: false,
-    clips: ['talk'], videoBg: '#efbd38',
+    clips: ['idle', 'talk'], videoBg: '#efbd38',
   },
   {
     id: 'noa', name: 'Noa', he: 'מקצועית ומדויקת', en: 'Sharp & precise',
     persona: 'precise and professional; explains grammar crisply; great for work and exams',
     voice: 'Kore', pitch: 1.05, skin: '#f7d9c4', hair: '#b5532a', shirt: '#4361ee', style: 'bun', glasses: true,
-    clips: ['talk'], videoBg: '#efc243',
+    clips: ['idle', 'talk'], videoBg: '#efc243',
   },
   {
     id: 'sam', name: 'Sam', he: 'סקרן ומספר סיפורים', en: 'Curious storyteller',
     persona: 'curious storyteller; asks lots of follow-up questions and shares short anecdotes',
     voice: 'Charon', pitch: 0.95, skin: '#8d5a3b', hair: '#2a1a12', shirt: '#ffb703', style: 'curly', glasses: false,
-    clips: ['talk'], videoBg: '#eec14c',
+    clips: ['idle', 'talk'], videoBg: '#eec14c',
   },
 ];
 
