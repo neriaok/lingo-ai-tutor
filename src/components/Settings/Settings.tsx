@@ -6,6 +6,7 @@ import { useStrings } from '../../hooks/useStrings';
 import { updateProfile } from '../../features/profile/profileSlice';
 import { setView } from '../../features/session/sessionSlice';
 import { createBackup, restoreBackup } from '../../services/backup';
+import { lastConnection } from '../../services/gemini/liveTutor';
 import { isAndroidApp } from '../../services/nativeCall';
 import { clearAll } from '../../services/storage';
 import type { CorrectionStyle, LangCode, Profile, ThinkTime, TurnMode } from '../../types';
@@ -33,6 +34,7 @@ const Settings: FC = () => {
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoreText, setRestoreText] = useState('');
   const isHe = profile.native === 'he';
+  const conn = lastConnection();
 
   const patch = (p: Partial<Profile>): void => setDraft((d) => ({ ...d, ...p }));
 
@@ -285,6 +287,11 @@ const Settings: FC = () => {
       </div>
 
       <p className={styles.version} dir="ltr">Lingo · {__APP_VERSION__}</p>
+      {conn && (
+        <p className={styles.version}>
+          {s.lastConn}: <span dir="ltr">{conn.model}</span> · {s.songsFeature} {conn.songs ? '✓' : '✕'} · {s.captionLangs} {conn.captionLanguages ? '✓' : '✕'}
+        </p>
+      )}
     </div>
   );
 };

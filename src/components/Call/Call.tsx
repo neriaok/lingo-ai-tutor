@@ -14,7 +14,7 @@ import { addMinutes, addMistake, addXp, saveWord } from '../../features/progress
 import { addMessage, setSummary, setView, updateMessage } from '../../features/session/sessionSlice';
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
 import { buildLiveInstruction } from '../../services/tutorPrompt';
-import { isAndroidApp, onBackgroundCallAction, startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
+import { isAndroidApp, onBackgroundCallAction, pingBackgroundCall, startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
 import { stopSpeaking } from '../../services/speech';
 import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
@@ -378,8 +378,14 @@ const Call: FC = () => {
   useEffect(() => {
     if (!backgroundActive) return undefined;
     return onBackgroundCallAction((action) => {
-      if (action === 'mute') actionsRef.current.handleMute();
-      else void actionsRef.current.handleEnd();
+      if (action === 'mute') {
+        actionsRef.current.handleMute();
+        return;
+      }
+      // Hang up immediately (mic off, socket closed); the summary is prepared after that.
+      const t = tutorRef.current;
+      tutorRef.current = null;
+      void (t ? t.stop() : Promise.resolve()).then(() => actionsRef.current.handleEnd());
     });
   }, [backgroundActive]);
   useEffect(() => {
@@ -396,8 +402,14 @@ const Call: FC = () => {
   }, [backgroundActive, muted, tutor.name, tutor.id, s]);
   useEffect(() => {
     if (!backgroundActive) return undefined;
-    return () => void stopBackgroundCall();
+    const beat = window.setInterval(pingBackgroundCall, 5000);
+    return () => {
+      window.clearInterval(beat);
+      void stopBackgroundCall();
+    };
   }, [backgroundActive]);
+  // Leaving the call screen for any reason always clears the notification.
+  useEffect(() => () => void stopBackgroundCall(), []);
   useCallMediaSession({
     active: live && mode === 'voice',
     title: `${tutor.name} · Lingo`,

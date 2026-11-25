@@ -58,6 +58,24 @@ export interface LiveTutorOptions {
  * barge-in, captions for both sides, and transparent reconnects (session resumption).
  */
 const WORKING_KEY = 'lingo:v1:live-working';
+
+type ConfigTier = 0 | 1 | 2;
+interface Attempt {
+  model: string;
+  apiVersion?: string;
+  tier: ConfigTier;
+}
+
+/** What the last successful call connected with — shown in Settings for troubleshooting. */
+export const lastConnection = (): { model: string; songs: boolean; captionLanguages: boolean } | null => {
+  try {
+    const a = JSON.parse(localStorage.getItem(WORKING_KEY) ?? 'null') as Attempt | null;
+    if (!a?.model || typeof a.tier !== 'number') return null;
+    return { model: a.model, songs: a.tier < 2, captionLanguages: a.tier === 0 };
+  } catch {
+    return null;
+  }
+};
 // Mic RMS that counts as the learner talking over the tutor (echo after cancellation is far quieter).
 const BARGE_IN_LEVEL = 0.035;
 
@@ -71,7 +89,8 @@ export class LiveTutor {
   private closedByUser = false;
   private model: string;
   private apiVersion: string | undefined;
-  private lean = false;
+  /** 0 = everything (tools, caption languages, long-call support), 1 = without caption languages, 2 = minimal. */
+  private tier: ConfigTier = 0;
   private muted = false;
   private ready = false;
   private lastClose = '';
@@ -88,21 +107,25 @@ export class LiveTutor {
   private bargeOpenUntil = 0;
   /** Re-sends a text turn through realtime input if the model ignored it (some models only answer that way). */
   private replyWatchdog = 0;
+  /** Fires if the learner finished speaking but no reply started (e.g. after a long monologue). */
+  private rescueTimer = 0;
+  private rescued = false;
 
   constructor(private opts: LiveTutorOptions, private ev: LiveTutorEvents) {
     this.model = opts.model;
   }
 
   /** Model/API-version/config combinations to try, last working one first. */
-  private attempts(): { model: string; apiVersion?: string; lean: boolean }[] {
+  private attempts(): Attempt[] {
     const models = [...new Set([this.opts.model, ...LIVE_MODEL_CANDIDATES].filter(Boolean))];
-    const list: { model: string; apiVersion?: string; lean: boolean }[] = [];
+    const list: Attempt[] = [];
     for (const model of models) {
-      list.push({ model, lean: false }, { model, lean: true }, { model, apiVersion: 'v1alpha', lean: true });
+      // Try the richest setup first, so the song tool and caption languages stay on whenever possible.
+      list.push({ model, tier: 0 }, { model, tier: 1 }, { model, tier: 2 }, { model, apiVersion: 'v1alpha', tier: 2 });
     }
     try {
-      const saved = JSON.parse(localStorage.getItem(WORKING_KEY) ?? 'null') as { model: string; apiVersion?: string; lean: boolean } | null;
-      if (saved?.model && saved.model === this.opts.model) list.unshift(saved);
+      const saved = JSON.parse(localStorage.getItem(WORKING_KEY) ?? 'null') as Attempt | null;
+      if (saved?.model && saved.model === this.opts.model && typeof saved.tier === 'number') list.unshift(saved);
     } catch {
       /* ignore */
     }
@@ -115,7 +138,7 @@ export class LiveTutor {
     for (const a of this.attempts()) {
       this.model = a.model;
       this.apiVersion = a.apiVersion;
-      this.lean = a.lean;
+      this.tier = a.tier;
       this.lastClose = '';
       try {
         await this.connect(false);
@@ -129,7 +152,7 @@ export class LiveTutor {
         // The close event (with the server's reason) arrives just after the error event.
         await new Promise((r) => setTimeout(r, 400));
         const reason = this.lastClose || String((e as Error)?.message ?? e);
-        reasons.push(`${a.model}${a.apiVersion ? ` (${a.apiVersion})` : ''}${a.lean ? ' lean' : ''}: ${reason}`);
+        reasons.push(`${a.model}${a.apiVersion ? ` (${a.apiVersion})` : ''}${a.tier ? ` tier${a.tier}` : ''}: ${reason}`);
         if (/API key|PERMISSION_DENIED|quota|RESOURCE_EXHAUSTED|429|billing/i.test(reason)) break;
       }
     }
@@ -199,15 +222,18 @@ export class LiveTutor {
               },
             },
     };
-    const config = this.lean
-      ? base
-      : {
-          ...base,
-          tools: this.ev.onSong ? TOOLS : undefined,
-          inputAudioTranscription: this.opts.languageCodes.length ? { languageCodes: this.opts.languageCodes } : {},
-          contextWindowCompression: { slidingWindow: {} },
-          sessionResumption: resuming && this.resumeHandle ? { handle: this.resumeHandle } : {},
-        };
+    const config =
+      this.tier === 2
+        ? base
+        : {
+            ...base,
+            tools: this.ev.onSong ? TOOLS : undefined,
+            ...(this.tier === 0 && this.opts.languageCodes.length
+              ? { inputAudioTranscription: { languageCodes: this.opts.languageCodes } }
+              : {}),
+            contextWindowCompression: { slidingWindow: {} },
+            sessionResumption: resuming && this.resumeHandle ? { handle: this.resumeHandle } : {},
+          };
     this.session = await ai.live.connect({
       model: this.model,
       config,
@@ -246,7 +272,10 @@ export class LiveTutor {
     const sc = m.serverContent;
     if (!sc) return;
 
-    if (sc.modelTurn || sc.outputTranscription) window.clearTimeout(this.replyWatchdog);
+    if (sc.modelTurn || sc.outputTranscription) {
+      window.clearTimeout(this.replyWatchdog);
+      window.clearTimeout(this.rescueTimer);
+    }
 
     if (sc.interrupted) {
       // Learner barged in — cut the tutor off immediately.
@@ -259,6 +288,8 @@ export class LiveTutor {
     if (sc.inputTranscription?.text) {
       this.userText += sc.inputTranscription.text;
       this.ev.onUserCaption(this.userText.trim());
+      this.rescued = false;
+      this.armRescue(this.opts.silenceMs + 6000);
     }
     if (sc.outputTranscription?.text) {
       this.tutorText += sc.outputTranscription.text;
@@ -272,8 +303,14 @@ export class LiveTutor {
     }
     if (sc.turnComplete) {
       const turn = { user: this.userText.trim(), tutor: this.tutorText.trim() };
+      if (!turn.tutor && turn.user) {
+        // The model closed the turn without answering — keep what the learner said and ask again.
+        this.rescue();
+        return;
+      }
       this.userText = '';
       this.tutorText = '';
+      window.clearTimeout(this.rescueTimer);
       if (turn.tutor) this.ev.onTurn(turn);
       this.ev.onState('listening');
     }
@@ -327,6 +364,7 @@ export class LiveTutor {
     this.talking = false;
     this.session.sendRealtimeInput({ activityEnd: {} });
     this.ev.onState('thinking');
+    this.armRescue(7000);
   }
 
   /** Auto mode: "I'm done, your turn" — closes the audio stream so the tutor replies now. */
@@ -335,6 +373,28 @@ export class LiveTutor {
     this.holdMicUntil = Date.now() + 400;
     this.session.sendRealtimeInput({ audioStreamEnd: true });
     this.ev.onState('thinking');
+    // If closing the audio stream isn't enough, send the words as text a moment later.
+    this.armRescue(2500);
+  }
+
+  private armRescue(ms: number): void {
+    window.clearTimeout(this.rescueTimer);
+    if (this.opts.turnMode === 'tap' && this.talking) return;
+    this.rescueTimer = window.setTimeout(() => this.rescue(), ms);
+  }
+
+  /** Makes sure the tutor answers: re-sends the learner's transcribed words as a text turn (once per turn). */
+  private rescue(): void {
+    window.clearTimeout(this.rescueTimer);
+    const said = this.userText.trim();
+    if (!this.session || this.rescued || this.player?.isPlaying()) return;
+    this.rescued = true;
+    this.ev.onState('thinking');
+    this.sendTurn(
+      said
+        ? `(The learner just said: "${said.slice(-1200)}". You haven't answered yet — reply to it now, naturally and briefly.)`
+        : "(The learner finished speaking. Reply to what they said, naturally and briefly.)",
+    );
   }
 
   setBackground(background: boolean): void {
@@ -366,6 +426,7 @@ export class LiveTutor {
   async stop(finalState: CallState = 'ended'): Promise<void> {
     this.closedByUser = true;
     window.clearTimeout(this.replyWatchdog);
+    window.clearTimeout(this.rescueTimer);
     await this.mic?.stop();
     this.mic = null;
     try {
