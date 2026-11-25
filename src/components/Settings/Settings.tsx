@@ -292,7 +292,7 @@ const Settings: FC = () => {
       <p className={styles.version} dir="ltr">Lingo · {__APP_VERSION__}</p>
       {conn && (
         <p className={styles.version}>
-          {s.lastConn}: <span dir="ltr">{conn.model}</span> · {s.songsFeature} {conn.songs ? '✓' : '✕'} · {s.captionLangs} {conn.captionLanguages ? '✓' : '✕'}
+          {s.lastConn}: <span dir="ltr">{conn.model}</span>
         </p>
       )}
     </div>

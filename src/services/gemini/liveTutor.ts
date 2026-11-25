@@ -120,12 +120,14 @@ export class LiveTutor {
     const models = [...new Set([this.opts.model, ...LIVE_MODEL_CANDIDATES].filter(Boolean))];
     const list: Attempt[] = [];
     for (const model of models) {
-      // Try the richest setup first, so the song tool and caption languages stay on whenever possible.
-      list.push({ model, tier: 0 }, { model, tier: 1 }, { model, tier: 2 }, { model, apiVersion: 'v1alpha', tier: 2 });
+      // The lean setup (tier 2) gives clearly better turn-taking: with the song tool and caption
+      // language hints on, the model mis-hears the learner and flips between listening and speaking.
+      // Song cards still come from the text model, so nothing is lost.
+      list.push({ model, tier: 2 }, { model, apiVersion: 'v1alpha', tier: 2 });
     }
     try {
       const saved = JSON.parse(localStorage.getItem(WORKING_KEY) ?? 'null') as Attempt | null;
-      if (saved?.model && saved.model === this.opts.model && typeof saved.tier === 'number') list.unshift(saved);
+      if (saved?.model && saved.model === this.opts.model && saved.tier === 2) list.unshift(saved);
     } catch {
       /* ignore */
     }
