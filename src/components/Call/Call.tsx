@@ -13,7 +13,7 @@ import { addMessage, setSummary, setView, updateMessage } from '../../features/s
 import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
 import { buildLiveInstruction, explainRule } from '../../services/tutorPrompt';
 import { stopSpeaking } from '../../services/speech';
-import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime } from '../../types';
+import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import Avatar from '../Avatar';
 import TutorPortrait from '../TutorPortrait';
@@ -93,7 +93,7 @@ const Call: FC = () => {
   );
 
   // ---------- Voice call ----------
-  const startCall = useCallback(async () => {
+  const startCall = useCallback(async (openerOverride?: string) => {
     if (!profileRef.current.apiKey) return;
     setNotice(null);
     const p = profileRef.current;
@@ -105,9 +105,9 @@ const Call: FC = () => {
         systemInstruction: buildLiveInstruction(p, scenario, memoryRef.current, messagesRef.current),
         turnMode: p.turnMode,
         silenceMs: SILENCE_MS[p.thinkTime],
-        opener: messagesRef.current.length
+        opener: openerOverride ?? (messagesRef.current.length
           ? '(The learner is back after a short break. Welcome them back in one short sentence and continue the conversation right where it stopped.)'
-          : `(${p.name || 'The learner'} just joined the call. Greet them warmly by name and open the activity.)`,
+          : `(${p.name || 'The learner'} just joined the call. Greet them warmly by name and open the activity.)`),
       },
       {
         onState: (st, detail) => {
@@ -225,6 +225,19 @@ const Call: FC = () => {
     dispatch(updateProfile({ explainMode }));
     const rule = explainRule({ ...profileRef.current, explainMode });
     tutorRef.current?.sendInstruction(`(The learner just changed a setting. ${rule} Apply it from your next sentence on, without commenting on the change.)`);
+  };
+
+  /** Switching turn mode needs a new Live session; the transcript carries the conversation over. */
+  const handleTurnMode = async (turnMode: TurnMode): Promise<void> => {
+    if (turnMode === profileRef.current.turnMode) return;
+    dispatch(updateProfile({ turnMode }));
+    profileRef.current = { ...profileRef.current, turnMode };
+    setTapTalking(false);
+    const t = tutorRef.current;
+    if (!t) return;
+    tutorRef.current = null;
+    await t.stop('connecting');
+    await startCall('(Same call, just reconnected. Do not greet again. Continue naturally from the last message, briefly repeating your last question if needed.)');
   };
 
   const handleTapTalk = (): void => {
@@ -349,6 +362,22 @@ const Call: FC = () => {
       </header>
 
       <div className={styles.modeRow}>
+        {mode === 'voice' && (
+          <div className={styles.turnToggle} role="radiogroup" aria-label={s.turnModeLabel}>
+            {([['auto', s.turnAutoShort], ['tap', s.turnTapShort]] as [TurnMode, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={profile.turnMode === id}
+                className={clsx(styles.turnOpt, profile.turnMode === id && styles.turnOn)}
+                onClick={() => void handleTurnMode(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <ExplainToggle
           value={profile.explainMode}
           native={profile.native}
@@ -392,11 +421,6 @@ const Call: FC = () => {
           <p className={styles.userCaption} dir="auto"><span>{s.youSaid}</span> {userCaption}</p>
         )}
         {!caption && !userCaption && live && <p className={styles.hint}>{profile.turnMode === 'tap' ? s.tapModeHint : s.tapToTalk}</p>}
-        {profile.turnMode === 'auto' && userCaption && !audioPlaying && live && (
-          <button type="button" className={styles.nudge} onClick={handleNudge}>
-            {s.yourTurn}
-          </button>
-        )}
         {captionTurn && (
           <FeedbackCard
             turn={captionTurn}
@@ -438,6 +462,12 @@ const Call: FC = () => {
           <button type="button" className={clsx(styles.ctrl, muted && styles.ctrlOn)} onClick={handleMute} disabled={!live} aria-pressed={muted}>
             <Icon name={muted ? 'micOff' : 'mic'} />
             <span>{muted ? s.unmute : s.mute}</span>
+          </button>
+        )}
+        {mode === 'voice' && profile.turnMode === 'auto' && (
+          <button type="button" className={clsx(styles.ctrl, styles.turnBtn)} onClick={handleNudge} disabled={!live || audioPlaying}>
+            <Icon name="send" />
+            <span>{s.yourTurnShort}</span>
           </button>
         )}
         <button type="button" className={clsx(styles.ctrl, styles.hang)} onClick={() => void handleEnd()} disabled={summarizing}>

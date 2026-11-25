@@ -41,7 +41,11 @@
 .status.paused i { background: #ffd166; }
 @keyframes breathe { 50% { opacity: 0.3; } }
 
-.modeRow { padding: 4px max(4vw, 12px) 0; }
+.modeRow { display: grid; gap: 6px; padding: 4px max(4vw, 12px) 0; }
+.turnToggle { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 99px; background: rgba(0, 0, 0, 0.08); }
+.turnOpt { min-height: 34px; border: 0; border-radius: 99px; background: transparent; color: inherit; font-size: 13px; font-weight: 500; }
+.turnOn { background: rgba(255, 255, 255, 0.85); color: #1b1b1f; font-weight: 700; }
+
 .stage { flex: none; display: grid; place-items: center; padding: 6px 0 0; }
 .ring {
   --lvl: 0;
@@ -89,7 +93,7 @@
 .controls {
   display: flex;
   justify-content: center;
-  gap: clamp(14px, 6vw, 32px);
+  gap: clamp(8px, 4vw, 28px);
   padding: 10px 16px max(14px, env(safe-area-inset-bottom));
   background: var(--bg);
   border-top: 1px solid var(--line);
@@ -132,3 +136,5 @@
 .talkOn svg { background: var(--teal); color: #fff; animation: talkPulse 1.2s infinite; }
 @keyframes talkPulse { 50% { box-shadow: 0 0 0 10px rgba(46, 196, 182, 0.25); } }
 @media (prefers-reduced-motion: reduce) { .talkOn svg, .thinking i { animation: none; } }
+.ctrl.turnBtn svg { background: var(--teal); color: #fff; box-shadow: none; }
+[dir='rtl'] .ctrl.turnBtn svg { transform: scaleX(-1); }
