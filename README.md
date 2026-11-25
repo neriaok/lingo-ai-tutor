@@ -49,6 +49,7 @@ Most "AI tutor" apps are chatbots with a microphone button bolted on. Lingo is b
 **Platform**
 - 🌍 6 languages in any direction (Hebrew, English, Arabic, Russian, French, Spanish), with full RTL support.
 - 📲 Installable **PWA** and a signed **Android APK**, both built by CI on every push.
+- 🔄 **Instant updates**: the Android app loads the live web app, so new versions arrive without reinstalling. An in-app "update now" bar appears when a new version is deployed.
 - 🔐 **Bring your own free key**. The Gemini key is stored only on your device, so there's no backend and no cost.
 
 ## Getting started (users)

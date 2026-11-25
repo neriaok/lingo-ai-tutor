@@ -8,8 +8,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+      registerType: 'prompt',
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'offline.html'],
       manifest: {
         name: 'Lingo — AI Language Tutor',
         short_name: 'Lingo',

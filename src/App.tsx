@@ -6,6 +6,7 @@ import Home from './components/Home';
 import Onboarding from './components/Onboarding';
 import Settings from './components/Settings';
 import Summary from './components/Summary';
+import UpdatePrompt from './components/UpdatePrompt';
 import Vocab from './components/Vocab';
 
 // The live call screen pulls in the Gemini SDK, so it is code-split.
@@ -22,15 +23,24 @@ const App: FC = () => {
     document.documentElement.lang = native;
   }, [native]);
 
-  if (!onboarded) return <Onboarding />;
-  switch (view) {
-    case 'call': return <Suspense fallback={null}><Call /></Suspense>;
-    case 'vocab': return <Vocab />;
-    case 'history': return <History />;
-    case 'summary': return <Summary />;
-    case 'settings': return <Settings />;
-    default: return <Home />;
-  }
+  const screen = (() => {
+    if (!onboarded) return <Onboarding />;
+    switch (view) {
+      case 'call': return <Suspense fallback={null}><Call /></Suspense>;
+      case 'vocab': return <Vocab />;
+      case 'history': return <History />;
+      case 'summary': return <Summary />;
+      case 'settings': return <Settings />;
+      default: return <Home />;
+    }
+  })();
+
+  return (
+    <>
+      {screen}
+      <UpdatePrompt />
+    </>
+  );
 };
 
 export default App;
