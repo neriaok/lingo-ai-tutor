@@ -39,8 +39,16 @@ const Settings: FC = () => {
 
   const patch = (p: Partial<Profile>): void => setDraft((d) => ({ ...d, ...p }));
 
+  /** Each target language keeps its own level; a new language starts at A1 with native-language help. */
+  const targetPatch = (code: LangCode): Partial<Profile> => {
+    if (code === draft.target) return {};
+    const levels = { ...draft.levels, [draft.target]: draft.level };
+    const known = levels[code];
+    return { target: code, levels, level: known ?? 'A1', ...(known ? {} : { explainMode: 'mixed' as const }) };
+  };
+
   const handleNative = (code: LangCode): void =>
-    patch({ native: code, target: code === draft.target ? (code === 'en' ? 'he' : 'en') : draft.target });
+    patch({ native: code, ...(code === draft.target ? targetPatch(code === 'en' ? 'he' : 'en') : {}) });
 
   const toggleInterest = (id: string): void =>
     patch({ interests: draft.interests.includes(id) ? draft.interests.filter((i) => i !== id) : [...draft.interests, id] });
@@ -113,7 +121,7 @@ const Settings: FC = () => {
         <span className={ui.label}>{s.targetLang}</span>
         <div className={styles.row}>
           {LANGUAGES.filter((l) => l.code !== draft.native).map((l) => (
-            <button key={l.code} type="button" className={clsx(ui.chip, draft.target === l.code && ui.chipOn)} onClick={() => patch({ target: l.code })}>
+            <button key={l.code} type="button" className={clsx(ui.chip, draft.target === l.code && ui.chipOn)} onClick={() => patch(targetPatch(l.code))}>
               {isHe ? l.he : l.name}
             </button>
           ))}

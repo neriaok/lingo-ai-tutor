@@ -17,6 +17,8 @@ export interface Profile {
   native: LangCode;
   target: LangCode;
   level: Level;
+  /** Last level used for each target language, so switching languages doesn't carry one level over. */
+  levels?: Partial<Record<LangCode, Level>>;
   interests: string[];
   goal: Goal;
   tutor: TutorId;

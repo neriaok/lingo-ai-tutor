@@ -16,7 +16,7 @@ import { LiveTutor, type CallState } from '../../services/gemini/liveTutor';
 import { buildLiveInstruction } from '../../services/tutorPrompt';
 import { isAndroidApp, onBackgroundCallAction, pingBackgroundCall, startBackgroundCall, stopBackgroundCall } from '../../services/nativeCall';
 import { stopSpeaking } from '../../services/speech';
-import type { ChatMessage, ExplainMode, Level, NewWord, ThinkTime, TurnMode } from '../../types';
+import type { ChatMessage, ExplainMode, Level, NewWord, Profile, ThinkTime, TurnMode } from '../../types';
 import ApiKeyForm from '../ApiKeyForm';
 import Avatar from '../Avatar';
 import TutorPortrait from '../TutorPortrait';
@@ -32,6 +32,9 @@ const uid = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8
 type Mode = 'voice' | 'text';
 
 const SILENCE_MS: Record<ThinkTime, number> = { short: 700, normal: 1100, long: 1700 };
+/** Beginners pause mid-sentence to find words — give them extra time before the turn ends. */
+const LEVEL_EXTRA_MS: Partial<Record<Level, number>> = { A1: 600, A2: 300 };
+const silenceFor = (p: Profile): number => SILENCE_MS[p.thinkTime] + (LEVEL_EXTRA_MS[p.level] ?? 0);
 
 const Call: FC = () => {
   const dispatch = useAppDispatch();
@@ -111,7 +114,7 @@ const Call: FC = () => {
         voice: tutorInfo(p.tutor).voice,
         systemInstruction: buildLiveInstruction(p, scenario, memoryRef.current, messagesRef.current, modeJustChanged),
         turnMode: p.turnMode,
-        silenceMs: SILENCE_MS[p.thinkTime],
+        silenceMs: silenceFor(p),
         languageCodes: [langInfo(p.target).speech, langInfo(p.native).speech],
         refreshInstruction: () => buildLiveInstruction(profileRef.current, scenario, memoryRef.current, messagesRef.current),
         opener: openerOverride ?? (messagesRef.current.length
@@ -305,13 +308,15 @@ const Call: FC = () => {
     setThinkingHint(true);
   };
 
+  const silenceMs = silenceFor(profile);
+
   // Auto mode: once you stop talking and the tutor hasn't started yet, show "thinking" instead of "listening".
   useEffect(() => {
     if (!userCaption || profile.turnMode !== 'auto') return undefined;
     setThinkingHint(false);
-    const timer = window.setTimeout(() => setThinkingHint(true), SILENCE_MS[profile.thinkTime] + 250);
+    const timer = window.setTimeout(() => setThinkingHint(true), silenceMs + 250);
     return () => window.clearTimeout(timer);
-  }, [userCaption, profile.turnMode, profile.thinkTime]);
+  }, [userCaption, profile.turnMode, silenceMs]);
 
   useEffect(() => {
     if (audioPlaying) setThinkingHint(false);
