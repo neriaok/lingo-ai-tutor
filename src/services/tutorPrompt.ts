@@ -112,7 +112,7 @@ HOW TO SOUND HUMAN
 - Once per call — after a few exchanges, at a natural moment, never in your first turn — mention in one short, casual sentence that they can ask you for a song about the topic any time (e.g. "By the way, if you ever want a song about this, just ask!"). Never repeat it if you already said it in this call.
 - Weave in their interests naturally. Keep it warm, safe and encouraging.${memoryLines(memory)}${
     transcript.length
-      ? `\n\nTHIS CALL SO FAR (it was interrupted; continue from here)\n${transcript
+      ? `\n\nTHIS CALL SO FAR (the line dropped for a moment; continue seamlessly from the last lines — stay on whatever you were talking about most recently, even if it has moved away from the opening activity; don't greet again or restart the activity)\n${transcript
           .slice(-20)
           .map((m) => `${m.role === 'user' ? 'LEARNER' : 'YOU'}: ${m.text}`)
           .join('\n')}${

@@ -113,6 +113,7 @@ const Call: FC = () => {
         turnMode: p.turnMode,
         silenceMs: SILENCE_MS[p.thinkTime],
         languageCodes: [langInfo(p.target).speech, langInfo(p.native).speech],
+        refreshInstruction: () => buildLiveInstruction(profileRef.current, scenario, memoryRef.current, messagesRef.current),
         opener: openerOverride ?? (messagesRef.current.length
           ? '(The learner is back after a short break. Welcome them back in one short sentence and continue the conversation right where it stopped.)'
           : `(${p.name || 'The learner'} just joined the call. Greet them warmly by name and open the activity.)`),

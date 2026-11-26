@@ -51,6 +51,12 @@ export interface LiveTutorOptions {
   silenceMs: number;
   /** BCP-47 codes the learner speaks (target + native), so captions aren't guessed as other languages. */
   languageCodes: string[];
+  /**
+   * Builds a fresh system instruction (with the call so far) for reconnects. Google ends a live
+   * session about every 10 minutes; without this the new session only knows the opening brief and
+   * drifts back to the first topic.
+   */
+  refreshInstruction?: () => string;
 }
 
 /**
@@ -206,7 +212,7 @@ export class LiveTutor {
     this.ready = false;
     const base = {
       responseModalities: [Modality.AUDIO],
-      systemInstruction: this.opts.systemInstruction,
+      systemInstruction: resuming && this.opts.refreshInstruction ? this.opts.refreshInstruction() : this.opts.systemInstruction,
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.opts.voice } } },
       inputAudioTranscription: {},
       outputAudioTranscription: {},
@@ -320,7 +326,7 @@ export class LiveTutor {
 
   private async handleClose(e: CloseEvent): Promise<void> {
     if (this.closedByUser) return;
-    if (this.resumeHandle) {
+    if (this.resumeHandle || this.opts.refreshInstruction) {
       await this.reconnect();
       return;
     }
