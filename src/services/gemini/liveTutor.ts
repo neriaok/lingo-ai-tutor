@@ -1,4 +1,5 @@
 import { EndSensitivity, Modality, StartSensitivity, Type, type LiveServerMessage, type Session } from '@google/genai';
+import { cleanTranscript } from './transcript';
 import { getClient } from './client';
 import { LIVE_MODEL_CANDIDATES } from './models';
 import { startMic, type MicHandle } from '../audio/mic';
@@ -294,8 +295,8 @@ export class LiveTutor {
       this.ev.onState('listening');
     }
     if (sc.inputTranscription?.text) {
-      this.userText += sc.inputTranscription.text;
-      this.ev.onUserCaption(this.userText.trim());
+      this.userText = cleanTranscript(this.userText + sc.inputTranscription.text, 2000) + (/\s$/.test(sc.inputTranscription.text) ? ' ' : '');
+      this.ev.onUserCaption(cleanTranscript(this.userText));
       this.rescued = false;
       this.armRescue(this.opts.silenceMs + 6000);
     }
@@ -310,7 +311,7 @@ export class LiveTutor {
       }
     }
     if (sc.turnComplete) {
-      const turn = { user: this.userText.trim(), tutor: this.tutorText.trim() };
+      const turn = { user: cleanTranscript(this.userText), tutor: this.tutorText.trim() };
       if (!turn.tutor && turn.user) {
         // The model closed the turn without answering — keep what the learner said and ask again.
         this.rescue();
@@ -400,13 +401,13 @@ export class LiveTutor {
   /** Makes sure the tutor answers: re-sends the learner's transcribed words as a text turn (once per turn). */
   private rescue(): void {
     window.clearTimeout(this.rescueTimer);
-    const said = this.userText.trim();
+    const said = cleanTranscript(this.userText);
     if (!this.session || this.rescued || this.player?.isPlaying()) return;
     this.rescued = true;
     this.ev.onState('thinking');
     this.sendTurn(
       said
-        ? `(The learner just said: "${said.slice(-1200)}". You haven't answered yet — reply to it now, naturally and briefly.)`
+        ? `(The learner just said: "${said.slice(-1200)}". You haven't answered yet — reply to it now, naturally and briefly. If it looks garbled, ask them to say it again.)`
         : "(The learner finished speaking. Reply to what they said, naturally and briefly.)",
     );
   }
